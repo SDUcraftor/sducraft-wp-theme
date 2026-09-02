@@ -1,6 +1,7 @@
 .mc-footer,
 .mc-footer * {
     box-sizing: border-box;
+    text-shadow: none;
 }
 
 /* Sakurairo keeps its stock footer fixed and adds matching space to the page. */
@@ -12,17 +13,40 @@ body.sducraft-mc-footer-enabled .site.wrapper {
     padding-bottom: 0 !important;
 }
 
-.mc-footer button {
+.mc-footer button,
+.mc-footer button:hover,
+.mc-footer button:active,
+.mc-footer button:focus {
+    appearance: none;
+    -webkit-appearance: none;
     font: inherit;
+    line-height: normal;
+    color: inherit;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+}
+
+.mc-footer img {
+    width: auto;
+    height: auto;
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
 }
 
 .mc-footer {
     --surface-block: 64px;
     --unlock-progress: 0;
+    --mc-footer-background: #ffffff;
     position: relative;
     overflow: visible;
     width: 100%;
-    background: transparent;
+    background-color: var(--mc-footer-background);
+    background-image: none;
     color: #f4f4f4;
     image-rendering: pixelated;
     isolation: isolate;
@@ -30,6 +54,10 @@ body.sducraft-mc-footer-enabled .site.wrapper {
     filter: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+}
+
+body.dark .mc-footer {
+    --mc-footer-background: #333333;
 }
 
 .mc-footer__surface {
