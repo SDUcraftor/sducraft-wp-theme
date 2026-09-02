@@ -51,6 +51,23 @@ The file contains one complete, enabled example using the bundled bedrock
 texture. Copy that registration when adding another easter egg, then directly
 replace its title, image markup, description, `x`, and `depth` values.
 
+Every marked block plays `Mob.villager.yes2.wav.ogg` when it is discovered.
+Override the sound for one easter egg with a URL or an asset-relative path, or
+set it to `false` to silence that specific egg:
+
+```php
+'sound' => 'audio/my-easter-egg.ogg',
+// 'sound' => false,
+```
+
+The site-wide default can also be replaced from PHP:
+
+```php
+add_filter('sducraft_mc_footer_default_easter_egg_sound', function () {
+    return get_stylesheet_directory_uri() . '/footer/assets/audio/my-default.ogg';
+});
+```
+
 ```php
 add_filter('sducraft_mc_footer_easter_eggs', function ($eggs) {
     $eggs[] = array(

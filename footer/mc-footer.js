@@ -122,6 +122,9 @@
     });
 
     footer.addEventListener('sducraft:block-mined', (event) => {
+        if (event.detail.easterEggs.length) {
+            playEasterEggSound(event.detail.easterEggs[0]);
+        }
         event.detail.easterEggs.some(openEasterEggDialog);
     });
 
@@ -134,6 +137,7 @@
         breakDirt: assetUrl('audio/Gravel_dig3.ogg'),
         breakStone: assetUrl('audio/Stone_dig1.ogg'),
         breakWood: assetUrl('audio/Wood_dig4.ogg'),
+        easterEggDefault: footer.dataset.defaultEasterEggSound || '',
         flint: assetUrl('tools/flint_and_steel.png'),
         pickaxe: assetUrl('tools/iron_pickaxe.png'),
         textures: {
@@ -157,7 +161,23 @@
         breakStone: new Audio(assets.breakStone),
         breakWood: new Audio(assets.breakWood),
     };
-    Object.values(audio).forEach((item) => {
+
+    const easterEggSounds = new Map();
+    if (assets.easterEggDefault) {
+        easterEggSounds.set(assets.easterEggDefault, new Audio(assets.easterEggDefault));
+    }
+    easterEggs.forEach((egg) => {
+        if (!Object.prototype.hasOwnProperty.call(egg, 'sound') || egg.sound === false || egg.sound === '') return;
+        try {
+            const source = new URL(String(egg.sound), assetsBase).href;
+            if (!easterEggSounds.has(source)) easterEggSounds.set(source, new Audio(source));
+        } catch (_) {
+            // Ignore invalid custom sound URLs.
+        }
+    });
+
+    const allAudio = [...Object.values(audio), ...easterEggSounds.values()];
+    allAudio.forEach((item) => {
         item.preload = 'auto';
         item.volume = config.masterVolume;
     });
@@ -191,6 +211,7 @@
     }
 
     function playSound(sound) {
+        if (!sound) return;
         try {
             sound.currentTime = 0;
             const playback = sound.play();
@@ -200,40 +221,50 @@
         }
     }
 
+    function playEasterEggSound(egg) {
+        if (egg.sound === false || egg.sound === '') return;
+
+        let source = assets.easterEggDefault;
+        if (Object.prototype.hasOwnProperty.call(egg, 'sound')) {
+            try {
+                source = new URL(String(egg.sound), assetsBase).href;
+            } catch (_) {
+                return;
+            }
+        }
+        if (source) playSound(easterEggSounds.get(source));
+    }
+
     function primeAudio() {
         if (audioPrimed || audioPriming) return;
         audioPriming = true;
-        const attemptsToPrime = Object.values(audio).map((item) => {
+        const attemptsToPrime = allAudio.map((item) => {
             const wasMuted = item.muted;
             item.muted = true;
             try {
                 const playback = item.play();
-                if (!playback) return Promise.resolve();
-                return playback.then(() => {
+                return Promise.resolve(playback).then(() => {
                     item.pause();
                     item.currentTime = 0;
+                }).catch(() => {
+                    item.pause();
+                    item.currentTime = 0;
+                }).finally(() => {
                     item.muted = wasMuted;
                 });
             } catch (_) {
                 item.muted = wasMuted;
-                return Promise.reject();
+                return Promise.resolve();
             }
         });
 
         Promise.all(attemptsToPrime).then(() => {
             audioPrimed = true;
             audioPriming = false;
-            Object.values(audio).forEach((item) => {
+            allAudio.forEach((item) => {
                 item.muted = false;
             });
             removeAudioPrimingListeners();
-        }).catch(() => {
-            audioPriming = false;
-            Object.values(audio).forEach((item) => {
-                item.pause();
-                item.currentTime = 0;
-                item.muted = false;
-            });
         });
     }
 

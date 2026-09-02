@@ -54,6 +54,10 @@ $mc_footer_easter_egg_data = array_map(
 );
 
 $mc_footer_assets = trailingslashit(get_stylesheet_directory_uri()) . 'footer/assets/';
+$mc_footer_default_easter_egg_sound = apply_filters(
+    'sducraft_mc_footer_default_easter_egg_sound',
+    $mc_footer_assets . 'audio/Mob.villager.yes2.wav.ogg'
+);
 ?>
 <footer
     class="mc-footer"
@@ -62,6 +66,7 @@ $mc_footer_assets = trailingslashit(get_stylesheet_directory_uri()) . 'footer/as
     data-assets-base="<?php echo esc_url($mc_footer_assets); ?>"
     data-home-url="<?php echo esc_url(home_url('/')); ?>"
     data-easter-eggs="<?php echo esc_attr(wp_json_encode($mc_footer_easter_egg_data)); ?>"
+    data-default-easter-egg-sound="<?php echo esc_url((string) $mc_footer_default_easter_egg_sound); ?>"
     data-reveal-delay="<?php echo esc_attr((string) absint($mc_footer_config['reveal_delay'])); ?>"
     data-ignition-attempts="<?php echo esc_attr((string) absint($mc_footer_config['ignition_attempts'])); ?>"
     data-scroll-threshold="<?php echo esc_attr((string) absint($mc_footer_config['scroll_threshold'])); ?>"
