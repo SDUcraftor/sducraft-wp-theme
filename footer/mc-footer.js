@@ -6,13 +6,28 @@
 
     const sakurairoFooter = document.querySelector('#colophon.site-footer');
     if (sakurairoFooter) {
-        sakurairoFooter.replaceWith(footer);
+        sakurairoFooter.before(footer);
     }
 
     const sakurairoWrapper = document.querySelector('.site.wrapper');
-    if (sakurairoWrapper) {
-        sakurairoWrapper.style.removeProperty('padding-bottom');
+
+    function normalizedPath(url) {
+        const path = new URL(url, window.location.origin).pathname.replace(/\/+$/, '');
+        return path || '/';
     }
+
+    function syncHomepageState() {
+        const isHomepage = normalizedPath(window.location.href) === normalizedPath(footer.dataset.homeUrl || '/');
+        document.body.classList.toggle('sducraft-mc-footer-enabled', isHomepage);
+        footer.hidden = !isHomepage;
+
+        if (isHomepage && sakurairoWrapper) {
+            sakurairoWrapper.style.removeProperty('padding-bottom');
+        }
+    }
+
+    syncHomepageState();
+    document.addEventListener('pjax:complete', syncHomepageState);
 
     footer.dataset.initialized = 'true';
 

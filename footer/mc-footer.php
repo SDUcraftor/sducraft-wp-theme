@@ -23,6 +23,7 @@ $mc_footer_assets = trailingslashit(get_stylesheet_directory_uri()) . 'footer/as
     id="mc-footer"
     data-state="idle"
     data-assets-base="<?php echo esc_url($mc_footer_assets); ?>"
+    data-home-url="<?php echo esc_url(home_url('/')); ?>"
     data-reveal-delay="<?php echo esc_attr((string) absint($mc_footer_config['reveal_delay'])); ?>"
     data-ignition-attempts="<?php echo esc_attr((string) absint($mc_footer_config['ignition_attempts'])); ?>"
     data-scroll-threshold="<?php echo esc_attr((string) absint($mc_footer_config['scroll_threshold'])); ?>"
