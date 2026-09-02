@@ -1,0 +1,80 @@
+/*
+Theme Name:     SDUCraft
+Template:       Sakurairo
+*/
+
+:where(.wp-site-blocks *:focus){outline-width:2px;outline-style:solid}
+
+.minecraft-title{
+    text-shadow:3px 3px 0 #000;
+}
+
+body .entry-content p.text-white {
+    color: #ffffff !important;
+}
+
+body.dark .entry-content p.text-white {
+    color: #ffffff !important;
+}
+
+@font-face {
+    font-family: Minecraft;
+    src: url(https://www.sducraft.top:8443/wp-content/uploads/2026/04/1775897931-Minecraft.ttf);
+    font-weight: normal;
+}
+
+.menu-text-only-label {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    font-size: 15px;
+    cursor: default;
+}
+
+.mobile-nav .menu-text-only-label {
+    margin-left: 10px;
+}
+
+.custom-card {
+    border: 2px solid var(--theme-skin-matching, #50bccc);
+    border-radius: 15px;
+    padding: 1.5em 1.8em;
+    margin: 2em 0;
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--theme-skin-matching, #50bccc) 14%, transparent),
+        color-mix(in srgb, var(--theme-skin-matching, #50bccc) 4%, transparent));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
+    transition: box-shadow .3s ease, transform .3s ease;
+}
+
+/* 标题：居中 + 主题色 */
+.custom-card .wp-block-heading {
+    text-align: center;
+    margin-bottom: .8em;
+    color: var(--theme-skin-matching, #50bccc);
+}
+
+/* 正文：继承主题文字颜色，只微调行距 */
+.custom-card p {
+    margin: 0;
+    line-height: 1.9;
+}
+
+/* 悬停时轻微上浮 + 阴影加深（可选，不喜欢就删掉这段） */
+.custom-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .1);
+}
+
+/* 暗色模式：去阴影去悬浮、底色略提浓 */
+html.dark .custom-card {
+    box-shadow: none;
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--theme-skin-matching, #50bccc) 18%, transparent),
+        color-mix(in srgb, var(--theme-skin-matching, #50bccc) 6%, transparent));
+}
+html.dark .custom-card:hover {
+    transform: none;
+}
+
+

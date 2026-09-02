@@ -1,0 +1,402 @@
+.mc-footer,
+.mc-footer * {
+    box-sizing: border-box;
+}
+
+/* Sakurairo keeps its stock footer fixed and adds matching space to the page. */
+body.sducraft-mc-footer-enabled #colophon.site-footer {
+    display: none !important;
+}
+
+body.sducraft-mc-footer-enabled .site.wrapper {
+    padding-bottom: 0 !important;
+}
+
+.mc-footer button {
+    font: inherit;
+}
+
+.mc-footer {
+    --surface-block: 64px;
+    --unlock-progress: 0;
+    position: relative;
+    overflow: visible;
+    width: 100%;
+    background: transparent;
+    color: #f4f4f4;
+    image-rendering: pixelated;
+    isolation: isolate;
+    z-index: 2;
+    filter: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+.mc-footer__surface {
+    position: relative;
+    z-index: 2;
+    height: var(--surface-block);
+    overflow: visible;
+    background: transparent;
+}
+
+.mc-footer__blocks {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(var(--surface-cols), 1fr);
+    grid-template-rows: repeat(var(--surface-rows), 1fr);
+    z-index: 2;
+}
+
+.mc-surface-block {
+    min-width: 0;
+    background: url("assets/blocks/black_concrete.png") center / 100% 100% no-repeat;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015);
+    transition: opacity 90ms steps(2, end), transform 260ms steps(4, end);
+}
+
+.mc-surface-block.is-destroyed {
+    opacity: 0;
+    transform: scale(0.35);
+}
+
+.mc-surface-debris {
+    position: absolute;
+    z-index: 8;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+    background: url("assets/blocks/black_concrete.png") center / cover;
+    animation: debris-fly 700ms cubic-bezier(0.2, 0.72, 0.3, 1) forwards;
+}
+
+.mc-tnt {
+    position: absolute;
+    z-index: 5;
+    left: 50%;
+    bottom: 100%;
+    width: 72px;
+    height: 72px;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    transform: translate(-50%, calc(-100vh - 96px));
+    transition: transform 980ms cubic-bezier(0.22, 0.68, 0.28, 1.08);
+    user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mc-tnt[hidden] { display: none; }
+
+.mc-tnt img {
+    display: block;
+    width: 72px;
+    height: 72px;
+    image-rendering: pixelated;
+    pointer-events: none;
+}
+
+.mc-footer[data-state="tnt-falling"] .mc-tnt,
+.mc-footer[data-state="tnt-ready"] .mc-tnt,
+.mc-footer[data-state="fuse-lit"] .mc-tnt,
+.mc-footer[data-state="exploding"] .mc-tnt {
+    transform: translate(-50%, 0);
+}
+
+.mc-footer[data-state="tnt-ready"] .mc-tnt {
+    cursor: url("assets/tools/flint_and_steel.png") 2 14, pointer;
+}
+
+.mc-tnt:focus-visible {
+    outline: 4px solid #ffffff;
+    outline-offset: 4px;
+}
+
+.mc-tnt.is-struck { animation: tnt-strike 180ms steps(3, end); }
+.mc-tnt.is-landed { animation: tnt-land 180ms steps(3, end); }
+
+.mc-tnt.is-flashing img { filter: brightness(0) invert(1); }
+
+.mc-tnt__spark {
+    position: absolute;
+    top: -7px;
+    right: -10px;
+    width: 9px;
+    height: 9px;
+    opacity: 0;
+    background: #fff36b;
+    box-shadow: -12px 4px 0 #ff9d2e, -4px -10px 0 #ffffff, 8px -5px 0 #ff5b25;
+}
+
+.mc-tnt.is-struck .mc-tnt__spark { animation: spark-pop 180ms steps(3, end); }
+.mc-footer[data-state="fuse-lit"] .mc-tnt { cursor: default; }
+
+.mc-explosion {
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    left: 0;
+    z-index: 10;
+    height: 160px;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.mc-particle {
+    position: absolute;
+    left: 50%;
+    top: 48%;
+    width: var(--particle-size);
+    height: var(--particle-size);
+    background-image: var(--particle-frame);
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0;
+    image-rendering: pixelated;
+    animation: particle-burst var(--particle-duration) steps(12, end) var(--particle-delay) forwards;
+}
+
+.mc-explosion-flash {
+    position: absolute;
+    inset: 0;
+    z-index: 12;
+    pointer-events: none;
+    background: #ffffff;
+    animation: explosion-flash 240ms steps(3, end) forwards;
+}
+
+.mc-footer.is-shaking .mc-footer__surface { animation: surface-shake 360ms steps(6, end); }
+
+.mc-underground {
+    position: relative;
+    z-index: 1;
+    max-height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    background: transparent;
+    transition: max-height 360ms steps(6, end), visibility 0s linear 360ms;
+}
+
+.mc-footer[data-state="underground-open"] .mc-underground {
+    max-height: var(--world-height, 900px);
+    visibility: visible;
+    transition: max-height 360ms steps(6, end), visibility 0s;
+}
+
+.mc-underground__world {
+    display: grid;
+    width: 100%;
+    min-height: 480px;
+    grid-template-columns: repeat(var(--world-cols), 1fr);
+    grid-auto-rows: var(--world-block-size);
+    align-content: start;
+    background: transparent;
+    cursor: url("assets/tools/iron_pickaxe.png") 2 14, crosshair;
+    user-select: none;
+    touch-action: pan-y;
+}
+
+.mc-world-block {
+    --mining-progress: 0;
+    --destroy-texture: none;
+    position: relative;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    background-image: var(--block-texture);
+    background-size: 100% 100%;
+    image-rendering: pixelated;
+    outline: 0;
+    touch-action: none;
+}
+
+.mc-world-block::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    background-image: var(--destroy-texture);
+    background-position: center;
+    background-size: 100% 100%;
+    image-rendering: pixelated;
+    pointer-events: none;
+}
+
+.mc-world-block.is-mining { filter: brightness(1.2); }
+
+.mc-world-block.is-sky {
+    background: transparent;
+    pointer-events: none;
+}
+
+.mc-world-block.is-bedrock {
+    cursor: not-allowed;
+}
+
+.mc-world-block[data-type="sapling"] {
+    background-color: transparent;
+}
+
+.mc-world-block.is-air {
+    background: transparent;
+    pointer-events: none;
+}
+
+.mc-world-block:focus-visible {
+    z-index: 2;
+    outline: 3px solid #ffffff;
+    outline-offset: -3px;
+}
+
+.mc-block-drop {
+    position: absolute;
+    z-index: 4;
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+    background-image: var(--drop-texture);
+    background-size: cover;
+    image-rendering: pixelated;
+    animation: block-drop 560ms steps(7, end) forwards;
+}
+
+.mc-footer__status {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.mc-tool-cursor {
+    position: fixed;
+    z-index: 9999;
+    display: none;
+    width: 40px;
+    height: 40px;
+    pointer-events: none;
+    transform: translate(-32px, -32px);
+    transform-origin: 82% 82%;
+}
+
+.mc-tool-cursor img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+}
+
+.mc-tool-cursor.is-using-flint {
+    animation: flint-use 260ms steps(5, end);
+}
+
+.mc-tool-cursor.is-pickaxe {
+    transform: translate(-20px, -20px);
+    transform-origin: 50% 50%;
+}
+
+.mc-tool-cursor.is-pickaxe img {
+    transform: scaleX(-1);
+}
+
+.mc-tool-cursor.is-mining {
+    animation: pickaxe-swing 420ms steps(6, end) infinite;
+}
+
+@media (pointer: fine) {
+    .mc-footer.has-tool-cursor .mc-tool-cursor { display: block; }
+
+    .mc-footer.has-tool-cursor .mc-tnt,
+    .mc-footer.has-tool-cursor .mc-underground__world,
+    .mc-footer.has-tool-cursor .mc-underground__world * {
+        cursor: none !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .mc-footer { --surface-block: 48px; }
+
+    .mc-tnt,
+    .mc-tnt img {
+        width: 64px;
+        height: 64px;
+    }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mc-tnt,
+    .mc-surface-block,
+    .mc-underground { transition-duration: 1ms; }
+
+    .mc-footer.is-shaking .mc-footer__surface { animation: none; }
+    .mc-particle:nth-child(n + 10) { display: none; }
+}
+
+@keyframes tnt-strike {
+    50% { transform: translate(-50%, 0) scale(0.88); }
+}
+
+@keyframes tnt-land {
+    0%, 100% { transform: translate(-50%, 0) scale(1); }
+    45% { transform: translate(-50%, 4px) scale(1.08, 0.9); }
+}
+
+@keyframes spark-pop {
+    0% { opacity: 1; transform: scale(0.6); }
+    100% { opacity: 0; transform: scale(1.8); }
+}
+
+@keyframes particle-burst {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(0.45); }
+    30% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--particle-x)), calc(-50% + var(--particle-y))) scale(1.2); }
+}
+
+@keyframes explosion-flash {
+    0% { opacity: 0.95; }
+    45% { opacity: 0.4; }
+    100% { opacity: 0; }
+}
+
+@keyframes surface-shake {
+    0%, 100% { transform: translate(0, 0); }
+    20% { transform: translate(-5px, 2px); }
+    40% { transform: translate(5px, -2px); }
+    60% { transform: translate(-3px, -1px); }
+    80% { transform: translate(3px, 1px); }
+}
+
+@keyframes debris-fly {
+    0% { opacity: 1; transform: translate(0, 0) rotate(0); }
+    100% { opacity: 0; transform: translate(var(--debris-x), var(--debris-y)) rotate(var(--debris-rotation)); }
+}
+
+@keyframes block-drop {
+    0% { opacity: 1; transform: translate(0, 0) scale(0.75) rotate(0); }
+    55% { opacity: 1; transform: translate(0, -28px) scale(0.75) rotate(90deg); }
+    100% { opacity: 0; transform: translate(0, 10px) scale(0.45) rotate(180deg); }
+}
+
+@keyframes flint-use {
+    0%, 100% { transform: translate(-32px, -32px) rotate(8deg); }
+    48% { transform: translate(-30px, -30px) rotate(-34deg); }
+    72% { transform: translate(-31px, -31px) rotate(-40deg); }
+}
+
+@keyframes pickaxe-swing {
+    0%, 16% { transform: translate(-20px, -20px) rotate(12deg); }
+    52% { transform: translate(-18px, -18px) rotate(-44deg); }
+    68% { transform: translate(-18px, -18px) rotate(-50deg); }
+    100% { transform: translate(-20px, -20px) rotate(12deg); }
+}
