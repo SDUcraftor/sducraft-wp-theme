@@ -5,6 +5,11 @@
 
 defined('ABSPATH') || exit;
 
+$sducraft_mc_easter_eggs_file = __DIR__ . '/easter-eggs.php';
+if (is_file($sducraft_mc_easter_eggs_file)) {
+    require_once $sducraft_mc_easter_eggs_file;
+}
+
 function sducraft_mc_footer_asset_version($relative_path) {
     $absolute_path = get_stylesheet_directory() . '/footer/' . ltrim($relative_path, '/');
 

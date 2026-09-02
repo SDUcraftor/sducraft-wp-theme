@@ -56,6 +56,75 @@
         masterVolume: 0.68,
     };
 
+    function readEasterEggs() {
+        try {
+            const entries = JSON.parse(footer.dataset.easterEggs || '[]');
+            if (!Array.isArray(entries)) return [];
+
+            return entries.filter((entry) => (
+                entry
+                && typeof entry === 'object'
+                && typeof entry.id === 'string'
+                && Number.isFinite(Number(entry.x))
+                && Number.isFinite(Number(entry.depth))
+            )).map((entry) => ({
+                ...entry,
+                x: Math.min(1, Math.max(0, Number(entry.x))),
+                depth: Math.trunc(Number(entry.depth)),
+            }));
+        } catch (_) {
+            return [];
+        }
+    }
+
+    const easterEggs = readEasterEggs();
+    const eggsByBlock = new WeakMap();
+
+    function getEasterEggDialog(id) {
+        return Array.from(footer.querySelectorAll('[data-easter-egg-dialog]'))
+            .find((dialog) => dialog.dataset.easterEggDialog === id);
+    }
+
+    function closeEasterEggDialog(dialog) {
+        if (typeof dialog.close === 'function') {
+            dialog.close();
+        } else {
+            dialog.removeAttribute('open');
+        }
+    }
+
+    function openEasterEggDialog(egg) {
+        const dialog = getEasterEggDialog(egg.id);
+        if (!dialog) return false;
+
+        footer.querySelectorAll('.mc-easter-egg-dialog[open]').forEach((openDialog) => {
+            if (openDialog !== dialog) closeEasterEggDialog(openDialog);
+        });
+        hideToolCursor();
+        if (typeof dialog.showModal === 'function') {
+            if (!dialog.open) dialog.showModal();
+        } else {
+            dialog.setAttribute('open', '');
+        }
+        dialog.querySelector('[data-mc-dialog-close]')?.focus();
+        return true;
+    }
+
+    footer.addEventListener('click', (event) => {
+        const closeButton = event.target.closest('[data-mc-dialog-close]');
+        if (closeButton) closeEasterEggDialog(closeButton.closest('dialog'));
+    });
+
+    footer.querySelectorAll('.mc-easter-egg-dialog').forEach((dialog) => {
+        dialog.addEventListener('click', (event) => {
+            if (event.target === dialog) closeEasterEggDialog(dialog);
+        });
+    });
+
+    footer.addEventListener('sducraft:block-mined', (event) => {
+        event.detail.easterEggs.some(openEasterEggDialog);
+    });
+
     const assets = {
         ignite: assetUrl('audio/Fire_ignite.ogg.mp3'),
         fuse: assetUrl('audio/Fuse.ogg'),
@@ -473,6 +542,58 @@
         return 'bedrock';
     }
 
+    function setBlockCoordinates(block, row, col, cols, surfaceRow) {
+        block.dataset.column = String(col);
+        block.dataset.xRatio = (cols > 1 ? col / (cols - 1) : 0).toFixed(4);
+        block.dataset.row = String(row);
+        block.dataset.depth = String(row - surfaceRow);
+    }
+
+    function isMineableBlock(block) {
+        return block?.matches('.mc-world-block:not(.is-air):not(.is-sky):not(.is-bedrock)');
+    }
+
+    function bindEasterEggs(cols, rows, surfaceRow) {
+        const resolved = [];
+
+        easterEggs.forEach((egg) => {
+            const row = surfaceRow + egg.depth;
+            if (row < 0 || row >= rows) return;
+
+            const preferredCol = Math.round(egg.x * (cols - 1));
+            let target = null;
+            for (let offset = 0; offset < cols && !target; offset += 1) {
+                const candidates = offset === 0
+                    ? [preferredCol]
+                    : [preferredCol - offset, preferredCol + offset];
+                const targetCol = candidates.find((col) => {
+                    if (col < 0 || col >= cols) return false;
+                    return isMineableBlock(world.children[(row * cols) + col]);
+                });
+                if (targetCol !== undefined) target = world.children[(row * cols) + targetCol];
+            }
+            if (!target) return;
+
+            const current = eggsByBlock.get(target) || [];
+            current.push(egg);
+            eggsByBlock.set(target, current);
+            target.dataset.easterEgg = current.map((item) => item.id).join(' ');
+            resolved.push({
+                id: egg.id,
+                requestedX: egg.x,
+                column: Number(target.dataset.column),
+                columnRatio: Number(target.dataset.xRatio),
+                depth: Number(target.dataset.depth),
+                type: target.dataset.type,
+            });
+        });
+
+        footer.dispatchEvent(new CustomEvent('sducraft:world-built', {
+            bubbles: true,
+            detail: { columns: cols, rows, surfaceRow, easterEggs: resolved },
+        }));
+    }
+
     function buildWorld() {
         if (worldBuilt) return;
         worldBuilt = true;
@@ -481,8 +602,12 @@
         const cols = Math.max(8, Math.ceil(viewportWidth / targetSize));
         const blockSize = viewportWidth / cols;
         const rows = 19;
+        const surfaceRow = 6;
         world.style.setProperty('--world-cols', cols);
         world.style.setProperty('--world-block-size', `${blockSize}px`);
+        world.dataset.columns = String(cols);
+        world.dataset.rows = String(rows);
+        world.dataset.surfaceRow = String(surfaceRow);
         underground.style.setProperty('--world-height', `${rows * blockSize}px`);
 
         const fragment = document.createDocumentFragment();
@@ -492,6 +617,8 @@
                 if (type === 'sky') {
                     const sky = document.createElement('span');
                     sky.className = 'mc-world-block is-sky';
+                    sky.dataset.type = type;
+                    setBlockCoordinates(sky, row, col, cols, surfaceRow);
                     sky.setAttribute('aria-hidden', 'true');
                     fragment.append(sky);
                     continue;
@@ -500,6 +627,7 @@
                     const bedrock = document.createElement('span');
                     bedrock.className = 'mc-world-block is-bedrock';
                     bedrock.dataset.type = type;
+                    setBlockCoordinates(bedrock, row, col, cols, surfaceRow);
                     bedrock.style.setProperty('--block-texture', `url("${assets.textures.bedrock}")`);
                     bedrock.setAttribute('aria-label', '基岩，不可挖掘');
                     fragment.append(bedrock);
@@ -509,6 +637,7 @@
                 block.type = 'button';
                 block.className = 'mc-world-block';
                 block.dataset.type = type;
+                setBlockCoordinates(block, row, col, cols, surfaceRow);
                 block.dataset.hardness = String({ grass: 850, dirt: 750, stone: 1450, log: 1100, leaves: 500, sapling: 420 }[type]);
                 block.style.setProperty('--block-texture', `url("${assets.textures[type]}")`);
                 block.setAttribute('aria-label', `挖掘${{ grass: '草方块', dirt: '泥土', stone: '石头', log: '橡木', leaves: '橡树树叶', sapling: '树苗' }[type]}`);
@@ -517,6 +646,7 @@
             }
         }
         world.append(fragment);
+        bindEasterEggs(cols, rows, surfaceRow);
     }
 
     function startMining(event) {
@@ -570,6 +700,26 @@
         const rect = block.getBoundingClientRect();
         const worldRect = world.getBoundingClientRect();
         const type = block.dataset.type;
+        const detail = {
+            type,
+            column: Number(block.dataset.column),
+            columnRatio: Number(block.dataset.xRatio),
+            row: Number(block.dataset.row),
+            depth: Number(block.dataset.depth),
+            world: {
+                columns: Number(world.dataset.columns),
+                rows: Number(world.dataset.rows),
+                surfaceRow: Number(world.dataset.surfaceRow),
+            },
+            easterEggs: (eggsByBlock.get(block) || []).map((egg) => ({ ...egg })),
+        };
+        const beforeBreak = new CustomEvent('sducraft:block-before-break', {
+            bubbles: true,
+            cancelable: true,
+            detail,
+        });
+        if (!block.dispatchEvent(beforeBreak)) return false;
+
         const breakSound = {
             grass: audio.breakGrass,
             leaves: audio.breakGrass,
@@ -594,6 +744,11 @@
         drop.addEventListener('animationend', () => drop.remove(), { once: true });
         if (navigator.vibrate) navigator.vibrate(24);
         announce('方块已挖开');
+        block.dispatchEvent(new CustomEvent('sducraft:block-mined', {
+            bubbles: true,
+            detail,
+        }));
+        return true;
     }
 
     world.addEventListener('pointerdown', startMining);
