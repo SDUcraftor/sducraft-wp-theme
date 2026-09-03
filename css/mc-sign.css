@@ -1,0 +1,87 @@
+/*
+ * MC Sign 告示牌样式(无边框版:忠实原贴图,木纹直接铺满)
+ * 作用域:.mc-sign(牌面)/ .mc-sign-post(立柱,由 .mc-sign-wrap::after 绘制)
+ */
+
+.mc-sign {
+  /* 1 纹理像素 = 4 CSS 像素;改成 2px/3px/6px 可整体缩放 */
+  --mc-sign-px: 4px;
+
+  /* 自适应宽度 */
+  display: inline-block;
+  max-width: 90vw;
+  word-wrap: break-word;
+  word-break: break-word;
+
+  /* 木纹平铺 */
+  background-color: #af8f60;
+  background-image: url("../assets/images/sign-planks.png");
+  background-size: calc(var(--mc-sign-px) * 20);
+  background-repeat: repeat;
+  image-rendering: pixelated;
+
+  padding: calc(var(--mc-sign-px) * 3) calc(var(--mc-sign-px) * 4);
+
+  /* ===== MC 告示牌文字样式 ===== */
+  color: #2a2a2a !important; /* 更接近黑色 */
+  text-align: center !important;
+  line-height: 1.7 !important;
+  font-family: ui-monospace, Consolas, "Courier New", monospace !important;
+  font-weight: 700 !important; /* 更粗 */
+  text-shadow: 
+    0 1px 2px rgba(255, 255, 240, 0.4),
+    0 0 8px rgba(255, 248, 230, 0.2) !important; /* 更强的发光提亮 */
+
+  /* 立体边框阴影 */
+  box-shadow: 
+    inset 0 0 0 calc(var(--mc-sign-px) * 0.5) rgba(60, 40, 20, 0.4),
+    inset 0 0 0 calc(var(--mc-sign-px) * 1.5) rgba(40, 25, 10, 0.15),
+    0 calc(var(--mc-sign-px) * 0.5) calc(var(--mc-sign-px) * 2) rgba(0, 0, 0, 0.25);
+}
+
+/* 牌面内的标题/段落间距收敛 */
+.mc-sign :where(h1, h2, h3, h4, h5, h6, p) {
+  margin: 0;
+}
+.mc-sign :where(h1, h2, h3, h4, h5, h6, p) + :where(h1, h2, h3, h4, h5, h6, p) {
+  margin-top: calc(var(--mc-sign-px) * 2);
+}
+.mc-sign :where(a) {
+  color: inherit;
+}
+
+/* ===== 带立柱变体 ===== */
+.mc-sign-wrap {
+  --mc-sign-px: 4px;
+  --mc-sign-post-h: calc(var(--mc-sign-px) * 18);
+  position: relative;
+  margin-bottom: var(--mc-sign-post-h);
+  text-align: center;
+
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 立柱挂载在牌面上 */
+.mc-sign-wrap .mc-sign {
+  position: relative;
+}
+
+.mc-sign-wrap .mc-sign::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: calc(50% - var(--mc-sign-px) * 2);
+  width: calc(var(--mc-sign-px) * 4);
+  height: var(--mc-sign-post-h);
+  background-image: url("../assets/images/sign-post.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+
+  filter: drop-shadow(calc(var(--mc-sign-px) * 0.5) calc(var(--mc-sign-px) * 0.5) calc(var(--mc-sign-px) * 1.5) rgba(0, 0, 0, 0.3));
+}
