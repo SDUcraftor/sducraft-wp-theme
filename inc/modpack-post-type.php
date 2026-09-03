@@ -160,8 +160,8 @@ function sducraft_render_modpack_download_row($index, $download) {
     <div class="sducraft-download-row">
         <div class="sducraft-download-row__fields">
             <p><label>按钮文字<input type="text" name="<?php echo esc_attr($prefix); ?>[label]" value="<?php echo esc_attr($download['label']); ?>" placeholder="例如：Windows 客户端下载"></label></p>
-            <p><label>平台<input type="text" name="<?php echo esc_attr($prefix); ?>[platform]" value="<?php echo esc_attr($download['platform']); ?>" placeholder="Windows / Linux"></label></p>
-            <p><label>架构<input type="text" name="<?php echo esc_attr($prefix); ?>[architecture]" value="<?php echo esc_attr($download['architecture']); ?>" placeholder="x86_64 / ARM64"></label></p>
+            <p><label>平台<input type="text" name="<?php echo esc_attr($prefix); ?>[platform]" value="<?php echo esc_attr($download['platform']); ?>" placeholder="Windows/MacOS/Linux/..."></label></p>
+            <p><label>架构<input type="text" name="<?php echo esc_attr($prefix); ?>[architecture]" value="<?php echo esc_attr($download['architecture']); ?>" placeholder="x86_64/ARM64/..."></label></p>
         </div>
         <p>
             <label>下载地址<input class="widefat sducraft-download-url" type="url" name="<?php echo esc_attr($prefix); ?>[url]" value="<?php echo esc_url($download['url']); ?>" placeholder="https://..."></label>

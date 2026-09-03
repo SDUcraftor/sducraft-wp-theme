@@ -288,6 +288,7 @@
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
+    min-width: 0;
     padding: 34px 36px;
 }
 
@@ -298,18 +299,24 @@
 }
 
 .modpack-release__intro h1 {
+    max-width: 100%;
     margin: 10px 0 13px;
     color: var(--modpack-text);
     font-size: 31px;
     line-height: 1.25;
     font-weight: 600;
     letter-spacing: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .modpack-release__intro p {
+    max-width: 100%;
     margin: 0;
     color: var(--modpack-muted);
     line-height: 1.75;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .modpack-release__cover {
@@ -335,8 +342,14 @@
 
 .modpack-facts--large div {
     display: block;
+    min-width: 0;
     padding: 20px 24px;
     border-right: 1px solid var(--modpack-border);
+}
+
+.modpack-facts--large dd {
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .modpack-facts--large div:last-child {
@@ -374,7 +387,10 @@
 
 .modpack-download--large > span {
     display: grid;
+    min-width: 0;
     gap: 4px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .modpack-download--large small {
@@ -409,7 +425,12 @@ html.dark .modpack-single {
 
     .modpack-card,
     .modpack-release__header {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .modpack-release__intro h1 {
+        font-size: 25px;
+        line-height: 1.32;
     }
 
     .modpack-card__cover,
