@@ -13,6 +13,7 @@ require_once get_stylesheet_directory() . '/footer/bootstrap.php';
 
 
 require_once( get_stylesheet_directory() . '/inc/announcement-page.php' );
+require_once get_stylesheet_directory() . '/inc/modpack-post-type.php';
 
 /**
  * @author Billadom

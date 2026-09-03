@@ -1,0 +1,103 @@
+.sducraft-modpack-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 20px;
+}
+
+.sducraft-modpack-fields p:last-child {
+    grid-column: 1 / -1;
+}
+
+.sducraft-modpack-fields label,
+.sducraft-download-row label {
+    display: grid;
+    gap: 6px;
+}
+
+.sducraft-download-row {
+    margin: 12px 0;
+    padding: 14px 16px;
+    border: 1px solid #c3c4c7;
+    background: #f6f7f7;
+}
+
+.sducraft-download-row__fields {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+}
+
+.sducraft-download-row__fields input {
+    width: 100%;
+}
+
+.sducraft-remove-download {
+    margin-left: 12px;
+}
+
+.inline-edit-row fieldset.sducraft-modpack-quick-edit {
+    float: none;
+    clear: both;
+    width: auto;
+    margin: 12px 0 0;
+    padding: 14px 0 0;
+    border-top: 1px solid #dcdcde;
+}
+
+.sducraft-modpack-quick-edit .inline-edit-col {
+    padding: 0;
+}
+
+.sducraft-modpack-quick-edit .inline-edit-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin: 0;
+}
+
+.sducraft-modpack-quick-edit .inline-edit-group-title {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-size: 13px;
+}
+
+.inline-edit-row .sducraft-modpack-quick-edit label {
+    display: grid;
+    grid-template-columns: 120px minmax(240px, 680px);
+    align-items: center;
+    gap: 0 12px;
+    margin: 0;
+}
+
+.inline-edit-row .sducraft-modpack-quick-edit label .title {
+    display: block;
+    float: none;
+    width: auto;
+    margin: 0;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.inline-edit-row .sducraft-modpack-quick-edit .input-text-wrap {
+    display: block;
+    margin: 0;
+}
+
+.sducraft-modpack-quick-edit input,
+.sducraft-modpack-quick-edit select {
+    width: 100%;
+    max-width: none;
+}
+
+@media (max-width: 782px) {
+    .sducraft-modpack-fields,
+    .sducraft-download-row__fields,
+    .sducraft-modpack-quick-edit .inline-edit-group {
+        grid-template-columns: 1fr;
+    }
+
+    .inline-edit-row .sducraft-modpack-quick-edit label {
+        grid-template-columns: 1fr;
+        gap: 5px;
+    }
+}
