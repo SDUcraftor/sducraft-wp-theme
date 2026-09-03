@@ -218,7 +218,6 @@ body.dark .mc-footer {
 .mc-underground__world {
     display: grid;
     width: 100%;
-    min-height: 480px;
     grid-template-columns: repeat(var(--world-cols), 1fr);
     grid-auto-rows: var(--world-block-size);
     align-content: start;

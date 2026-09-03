@@ -33,9 +33,17 @@ function sducraft_mc_footer_enqueue_assets() {
     );
 
     wp_enqueue_script(
+        'sducraft-mc-world',
+        get_stylesheet_directory_uri() . '/footer/mc-world.js',
+        array(),
+        sducraft_mc_footer_asset_version('mc-world.js'),
+        true
+    );
+
+    wp_enqueue_script(
         'sducraft-mc-footer',
         get_stylesheet_directory_uri() . '/footer/mc-footer.js',
-        array(),
+        array('sducraft-mc-world'),
         sducraft_mc_footer_asset_version('mc-footer.js'),
         true
     );

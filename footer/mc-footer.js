@@ -41,9 +41,15 @@
     const toolCursor = footer.querySelector('#mc-tool-cursor');
     const toolCursorImage = toolCursor.querySelector('img');
     const assetsBase = footer.dataset.assetsBase || '';
+    const worldDefinition = window.SDUCraftMCWorld;
+
+    if (!worldDefinition?.getLayout || !worldDefinition?.getType || !worldDefinition?.getBlock) {
+        console.error('SDUCraft MC world definition is missing.');
+        return;
+    }
 
     function assetUrl(relativePath) {
-        return `${assetsBase}${relativePath}`;
+        return new URL(relativePath, assetsBase).href;
     }
 
     const config = {
@@ -133,22 +139,9 @@
         fuse: assetUrl('audio/Fuse.ogg'),
         explosion: assetUrl('audio/Explosion1.ogg'),
         landing: assetUrl('audio/Grass_dig2.ogg'),
-        breakGrass: assetUrl('audio/Grass_dig4.ogg'),
-        breakDirt: assetUrl('audio/Gravel_dig3.ogg'),
-        breakStone: assetUrl('audio/Stone_dig1.ogg'),
-        breakWood: assetUrl('audio/Wood_dig4.ogg'),
         easterEggDefault: footer.dataset.defaultEasterEggSound || '',
         flint: assetUrl('tools/flint_and_steel.png'),
         pickaxe: assetUrl('tools/iron_pickaxe.png'),
-        textures: {
-            grass: assetUrl('blocks/grass_block_side.png'),
-            dirt: assetUrl('blocks/dirt.png'),
-            stone: assetUrl('blocks/stone.png'),
-            bedrock: assetUrl('blocks/bedrock.png'),
-            log: assetUrl('blocks/oak_log.png'),
-            leaves: assetUrl('blocks/oak_leave.png'),
-            sapling: assetUrl('blocks/oak_sapling.png'),
-        },
     };
 
     const audio = {
@@ -156,11 +149,14 @@
         fuse: new Audio(assets.fuse),
         explosion: new Audio(assets.explosion),
         landing: new Audio(assets.landing),
-        breakGrass: new Audio(assets.breakGrass),
-        breakDirt: new Audio(assets.breakDirt),
-        breakStone: new Audio(assets.breakStone),
-        breakWood: new Audio(assets.breakWood),
     };
+
+    const blockSounds = new Map();
+    Object.values(worldDefinition.blocks).forEach((block) => {
+        if (!block.breakSound) return;
+        const source = assetUrl(block.breakSound);
+        if (!blockSounds.has(source)) blockSounds.set(source, new Audio(source));
+    });
 
     const easterEggSounds = new Map();
     if (assets.easterEggDefault) {
@@ -176,7 +172,7 @@
         }
     });
 
-    const allAudio = [...Object.values(audio), ...easterEggSounds.values()];
+    const allAudio = [...Object.values(audio), ...blockSounds.values(), ...easterEggSounds.values()];
     allAudio.forEach((item) => {
         item.preload = 'auto';
         item.volume = config.masterVolume;
@@ -555,24 +551,6 @@
         announce('地下方块世界已经打开');
     }
 
-    function worldType(row, col, cols) {
-        if (row < 6) {
-            const treeCol = Math.floor(cols * 0.72);
-            const distanceFromTrunk = Math.abs(col - treeCol);
-
-            if (col === treeCol && row >= 2) return 'log';
-            if (row === 0 && distanceFromTrunk <= 1) return 'leaves';
-            if ((row === 1 || row === 2) && distanceFromTrunk <= 2) return 'leaves';
-            if (row === 3 && distanceFromTrunk <= 1) return 'leaves';
-            if (row === 5 && col === Math.floor(cols * 0.25)) return 'sapling';
-            return 'sky';
-        }
-        if (row === 6) return 'grass';
-        if (row <= 9) return 'dirt';
-        if (row <= 17) return 'stone';
-        return 'bedrock';
-    }
-
     function setBlockCoordinates(block, row, col, cols, surfaceRow) {
         block.dataset.column = String(col);
         block.dataset.xRatio = (cols > 1 ? col / (cols - 1) : 0).toFixed(4);
@@ -581,7 +559,7 @@
     }
 
     function isMineableBlock(block) {
-        return block?.matches('.mc-world-block:not(.is-air):not(.is-sky):not(.is-bedrock)');
+        return block?.dataset.mineable === 'true' && !block.classList.contains('is-air');
     }
 
     function bindEasterEggs(cols, rows, surfaceRow) {
@@ -632,8 +610,8 @@
         const targetSize = viewportWidth <= 640 ? 40 : 48;
         const cols = Math.max(8, Math.ceil(viewportWidth / targetSize));
         const blockSize = viewportWidth / cols;
-        const rows = 19;
-        const surfaceRow = 6;
+        const layout = worldDefinition.getLayout();
+        const { rows, surfaceRow } = layout;
         world.style.setProperty('--world-cols', cols);
         world.style.setProperty('--world-block-size', `${blockSize}px`);
         world.dataset.columns = String(cols);
@@ -644,35 +622,29 @@
         const fragment = document.createDocumentFragment();
         for (let row = 0; row < rows; row += 1) {
             for (let col = 0; col < cols; col += 1) {
-                const type = worldType(row, col, cols);
-                if (type === 'sky') {
-                    const sky = document.createElement('span');
-                    sky.className = 'mc-world-block is-sky';
-                    sky.dataset.type = type;
-                    setBlockCoordinates(sky, row, col, cols, surfaceRow);
-                    sky.setAttribute('aria-hidden', 'true');
-                    fragment.append(sky);
-                    continue;
-                }
-                if (type === 'bedrock') {
-                    const bedrock = document.createElement('span');
-                    bedrock.className = 'mc-world-block is-bedrock';
-                    bedrock.dataset.type = type;
-                    setBlockCoordinates(bedrock, row, col, cols, surfaceRow);
-                    bedrock.style.setProperty('--block-texture', `url("${assets.textures.bedrock}")`);
-                    bedrock.setAttribute('aria-label', '基岩，不可挖掘');
-                    fragment.append(bedrock);
-                    continue;
-                }
-                const block = document.createElement('button');
-                block.type = 'button';
-                block.className = 'mc-world-block';
+                const type = worldDefinition.getType({ row, column: col, columns: cols, layout });
+                const definition = worldDefinition.getBlock(type);
+                const mineable = definition.mineable !== false;
+                const block = document.createElement(mineable ? 'button' : 'span');
+                if (mineable) block.type = 'button';
+                block.className = ['mc-world-block', definition.className || '', mineable ? '' : 'is-unmineable']
+                    .filter(Boolean)
+                    .join(' ');
                 block.dataset.type = type;
+                block.dataset.mineable = String(mineable);
                 setBlockCoordinates(block, row, col, cols, surfaceRow);
-                block.dataset.hardness = String({ grass: 850, dirt: 750, stone: 1450, log: 1100, leaves: 500, sapling: 420 }[type]);
-                block.style.setProperty('--block-texture', `url("${assets.textures[type]}")`);
-                block.setAttribute('aria-label', `挖掘${{ grass: '草方块', dirt: '泥土', stone: '石头', log: '橡木', leaves: '橡树树叶', sapling: '树苗' }[type]}`);
-                block.tabIndex = -1;
+                if (definition.texture) {
+                    block.style.setProperty('--block-texture', `url("${assetUrl(definition.texture)}")`);
+                }
+                if (mineable) {
+                    block.dataset.hardness = String(Number(definition.hardness) || 1000);
+                    block.setAttribute('aria-label', `挖掘${definition.label || type}`);
+                    block.tabIndex = -1;
+                } else if (type === 'sky') {
+                    block.setAttribute('aria-hidden', 'true');
+                } else {
+                    block.setAttribute('aria-label', `${definition.label || type}，不可挖掘`);
+                }
                 fragment.append(block);
             }
         }
@@ -681,8 +653,8 @@
     }
 
     function startMining(event) {
-        const block = event.target.closest('.mc-world-block:not(.is-air):not(.is-sky):not(.is-bedrock)');
-        if (!block || state !== 'underground-open') return;
+        const block = event.target.closest('.mc-world-block');
+        if (!isMineableBlock(block) || state !== 'underground-open') return;
         event.preventDefault();
         stopMining();
         block.setPointerCapture?.(event.pointerId);
@@ -731,6 +703,7 @@
         const rect = block.getBoundingClientRect();
         const worldRect = world.getBoundingClientRect();
         const type = block.dataset.type;
+        const definition = worldDefinition.getBlock(type);
         const detail = {
             type,
             column: Number(block.dataset.column),
@@ -751,14 +724,9 @@
         });
         if (!block.dispatchEvent(beforeBreak)) return false;
 
-        const breakSound = {
-            grass: audio.breakGrass,
-            leaves: audio.breakGrass,
-            sapling: audio.breakGrass,
-            dirt: audio.breakDirt,
-            stone: audio.breakStone,
-            log: audio.breakWood,
-        }[type];
+        const breakSound = definition.breakSound
+            ? blockSounds.get(assetUrl(definition.breakSound))
+            : null;
         if (breakSound) playSound(breakSound);
         block.classList.add('is-air');
         block.disabled = true;
@@ -770,7 +738,9 @@
         drop.className = 'mc-block-drop';
         drop.style.left = `${rect.left - worldRect.left + (rect.width / 2) - 10}px`;
         drop.style.top = `${rect.top - worldRect.top + (rect.height / 2) - 10}px`;
-        drop.style.setProperty('--drop-texture', `url("${assets.textures[type]}")`);
+        if (definition.texture) {
+            drop.style.setProperty('--drop-texture', `url("${assetUrl(definition.texture)}")`);
+        }
         world.append(drop);
         drop.addEventListener('animationend', () => drop.remove(), { once: true });
         if (navigator.vibrate) navigator.vibrate(24);

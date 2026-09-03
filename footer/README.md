@@ -10,6 +10,7 @@ continue to change the original footer safely.
 - `easter-eggs.php`: site-specific PHP easter-egg registrations.
 - `mc-footer.php`: WordPress template markup and configuration attributes.
 - `mc-footer.css`: component-scoped styles.
+- `mc-world.js`: world layers, block definitions, and special structures.
 - `mc-footer.js`: interaction state machine.
 - `assets/`: block textures, tools, particles, and audio.
 
@@ -18,6 +19,30 @@ The child theme loads this directory from its root `functions.php`:
 ```php
 require_once get_stylesheet_directory() . '/footer/bootstrap.php';
 ```
+
+## World configuration
+
+Edit `mc-world.js` to change the underground world without touching the
+footer interaction code.
+
+- `blocks` defines each block's label, texture, mining hardness, break sound,
+  and whether it is mineable. Texture and sound values may be paths relative
+  to `footer/assets/` or complete external URLs.
+- `layers` defines the world from top to bottom. Change a layer's `count` to
+  change its thickness, or add another entry using a type from `blocks`.
+- `structures` contains functions that replace base-layer cells with trees,
+  saplings, ores, buildings, or other special layouts. Structure depth is
+  relative to grass, so grass is `0` and the block immediately above it is
+  `-1`.
+
+For example, five dirt layers only requires this change:
+
+```js
+{ type: 'dirt', count: 5 },
+```
+
+The total row count, grass position, world height, coordinates, and easter-egg
+depth lookup are recalculated automatically.
 
 ## Configuration
 
