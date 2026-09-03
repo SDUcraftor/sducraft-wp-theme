@@ -61,7 +61,6 @@
     border-radius: 8px;
     background: var(--modpack-surface);
     box-shadow: 0 8px 24px rgba(25, 32, 40, .08);
-    backdrop-filter: blur(14px);
     transition: transform .28s ease, box-shadow .28s ease;
 }
 
@@ -296,6 +295,54 @@
     color: #fff;
 }
 
+.modpack-load-more {
+    display: flex;
+    justify-content: center;
+    margin: 30px 0 0;
+}
+
+.modpack-load-more__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-width: 138px;
+    min-height: 42px;
+    padding: 9px 18px;
+    border: 1px solid var(--modpack-border);
+    border-radius: 5px;
+    background: var(--modpack-surface);
+    color: var(--modpack-text);
+    box-shadow: 0 5px 18px rgba(25, 32, 40, .07);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease;
+}
+
+.modpack-load-more__button:hover {
+    border-color: var(--modpack-accent);
+    color: var(--modpack-accent);
+    box-shadow: 0 8px 22px rgba(25, 32, 40, .11);
+    transform: translateY(-2px);
+}
+
+.modpack-load-more__button:disabled {
+    cursor: wait;
+    opacity: .65;
+    transform: none;
+}
+
+.modpack-load-more__button.is-loading i {
+    animation: modpack-load-more-spin .8s linear infinite;
+}
+
+@keyframes modpack-load-more-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .modpack-empty {
     padding: 50px 20px;
     border: 1px dashed var(--modpack-border);
@@ -310,7 +357,6 @@
     border-radius: 8px;
     background: var(--modpack-surface);
     box-shadow: 0 8px 30px rgba(25, 32, 40, .09);
-    backdrop-filter: blur(14px);
 }
 
 .modpack-release__header {

@@ -315,8 +315,139 @@ function sducraft_enqueue_modpack_assets() {
         array('sakurairo-child-style'),
         wp_get_theme()->get('Version')
     );
+
+    if (is_page_template('user/page-game-download.php')) {
+        wp_enqueue_script(
+            'sducraft-modpack-page',
+            get_stylesheet_directory_uri() . '/js/modpack-page.js',
+            array(),
+            wp_get_theme()->get('Version'),
+            true
+        );
+        wp_localize_script('sducraft-modpack-page', 'sducraftModpackPage', array(
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce'   => wp_create_nonce('sducraft_load_modpacks'),
+            'loading' => '正在加载…',
+            'error'   => '加载失败，请重试',
+        ));
+    }
 }
 add_action('wp_enqueue_scripts', 'sducraft_enqueue_modpack_assets', 30);
+
+function sducraft_add_modpack_page_meta_box($post) {
+    if (get_page_template_slug($post) !== 'user/page-game-download.php') {
+        return;
+    }
+
+    add_meta_box(
+        'sducraft-modpack-page-settings',
+        '整合包展示设置',
+        'sducraft_render_modpack_page_meta_box',
+        'page',
+        'side',
+        'default'
+    );
+}
+add_action('add_meta_boxes_page', 'sducraft_add_modpack_page_meta_box');
+
+function sducraft_render_modpack_page_meta_box($post) {
+    wp_nonce_field('sducraft_save_modpack_page', 'sducraft_modpack_page_nonce');
+    ?>
+    <p>
+        <label for="sducraft-modpack-per-page"><strong>每批展示数</strong></label>
+    </p>
+    <p>
+        <input id="sducraft-modpack-per-page" type="number" min="1" max="50" step="1"
+            name="sducraft_modpack_per_page" value="<?php echo esc_attr(sducraft_get_modpack_per_page($post->ID)); ?>">
+    </p>
+    <p class="description">页面首次展示的数量，也是每次点击“继续查看”后追加的数量。</p>
+    <?php
+}
+
+function sducraft_save_modpack_page_settings($post_id) {
+    if (!isset($_POST['sducraft_modpack_page_nonce']) ||
+        !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['sducraft_modpack_page_nonce'])), 'sducraft_save_modpack_page') ||
+        (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) ||
+        !current_user_can('edit_post', $post_id)) {
+        return;
+    }
+
+    $per_page = absint($_POST['sducraft_modpack_per_page'] ?? 6);
+    update_post_meta($post_id, '_sducraft_modpack_per_page', min(50, max(1, $per_page)));
+}
+add_action('save_post_page', 'sducraft_save_modpack_page_settings');
+
+function sducraft_get_modpack_per_page($page_id) {
+    $per_page = absint(get_post_meta($page_id, '_sducraft_modpack_per_page', true));
+    return $per_page ? min(50, $per_page) : 6;
+}
+
+function sducraft_get_ordered_modpacks() {
+    $query = new WP_Query(array(
+        'post_type'              => SDUCRAFT_MODPACK_POST_TYPE,
+        'post_status'            => 'publish',
+        'posts_per_page'         => -1,
+        'orderby'                => 'date',
+        'order'                  => 'DESC',
+        'no_found_rows'          => true,
+        'update_post_term_cache' => false,
+    ));
+    $posts = $query->posts;
+
+    usort($posts, function ($left, $right) {
+        $left_status = get_post_meta($left->ID, '_sducraft_modpack_status', true);
+        $right_status = get_post_meta($right->ID, '_sducraft_modpack_status', true);
+        $status_difference = sducraft_modpack_status_order($left_status) - sducraft_modpack_status_order($right_status);
+
+        return $status_difference !== 0
+            ? $status_difference
+            : strcmp($right->post_date, $left->post_date);
+    });
+
+    return $posts;
+}
+
+function sducraft_render_modpack_cards($posts, $first_image_eager = false) {
+    if (!$posts) {
+        return '';
+    }
+
+    global $post;
+    ob_start();
+    foreach (array_values($posts) as $index => $modpack_post) {
+        $post = $modpack_post;
+        setup_postdata($post);
+        get_template_part('template-parts/modpack', 'card', array(
+            'image_loading' => $first_image_eager && $index === 0 ? 'eager' : 'lazy',
+        ));
+    }
+    wp_reset_postdata();
+
+    return ob_get_clean();
+}
+
+function sducraft_load_modpacks() {
+    check_ajax_referer('sducraft_load_modpacks', 'nonce');
+
+    $page_id = absint($_POST['page_id'] ?? 0);
+    $offset = max(0, absint($_POST['offset'] ?? 0));
+    if (!$page_id || get_post_status($page_id) !== 'publish' || get_page_template_slug($page_id) !== 'user/page-game-download.php') {
+        wp_send_json_error(array('message' => '无效的整合包页面。'), 400);
+    }
+
+    $per_page = sducraft_get_modpack_per_page($page_id);
+    $modpacks = sducraft_get_ordered_modpacks();
+    $batch = array_slice($modpacks, $offset, $per_page);
+    $next_offset = $offset + count($batch);
+
+    wp_send_json_success(array(
+        'html'        => sducraft_render_modpack_cards($batch),
+        'next_offset' => $next_offset,
+        'has_more'    => $next_offset < count($modpacks),
+    ));
+}
+add_action('wp_ajax_sducraft_load_modpacks', 'sducraft_load_modpacks');
+add_action('wp_ajax_nopriv_sducraft_load_modpacks', 'sducraft_load_modpacks');
 
 function sducraft_get_modpack_data($post_id = 0) {
     $post_id = $post_id ?: get_the_ID();

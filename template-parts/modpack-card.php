@@ -6,11 +6,16 @@ if (!defined('ABSPATH')) {
 $modpack = sducraft_get_modpack_data();
 $published_date = get_the_date('Y-m-d');
 $modified_date = get_the_modified_date('Y-m-d');
+$image_loading = isset($args['image_loading']) && $args['image_loading'] === 'eager' ? 'eager' : 'lazy';
+$image_attributes = array('loading' => $image_loading);
+if ($image_loading === 'eager') {
+    $image_attributes['fetchpriority'] = 'high';
+}
 ?>
 <article <?php post_class('modpack-card'); ?>>
     <?php if (has_post_thumbnail()) : ?>
         <a class="modpack-card__cover" href="<?php the_permalink(); ?>" tabindex="-1" aria-hidden="true">
-            <?php the_post_thumbnail('large', array('loading' => 'lazy')); ?>
+            <?php the_post_thumbnail('large', $image_attributes); ?>
         </a>
     <?php else : ?>
         <div class="modpack-card__cover modpack-cover-placeholder" aria-hidden="true">
