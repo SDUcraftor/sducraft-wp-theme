@@ -77,4 +77,97 @@ html.dark .custom-card:hover {
     transform: none;
 }
 
+.sducraft-category-posts__list {
+    display: grid;
+    gap: 24px;
+}
 
+.sducraft-category-posts {
+    padding-bottom: 34px;
+}
+
+.sducraft-category-posts__list .post-list-thumb {
+    margin: 0;
+}
+
+.sducraft-category-posts .sducraft-category-posts__list .post-list-thumb .post-excerpt {
+    position: absolute;
+    top: auto;
+    left: 0;
+    bottom: 12px;
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 48px;
+    padding-right: 16px;
+    padding-left: 16px;
+    box-sizing: border-box;
+    letter-spacing: 0;
+}
+
+.sducraft-category-posts .sducraft-category-posts__list .post-list-thumb .post-excerpt p {
+    display: -webkit-box;
+    overflow: hidden;
+    line-height: 24px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.sducraft-category-posts__more {
+    display: flex;
+    justify-content: center;
+    margin: 34px 0 0;
+}
+
+.sducraft-category-posts__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-width: 138px;
+    min-height: 42px;
+    padding: 9px 20px;
+    border: 1.5px solid #fff;
+    border-radius: 50px;
+    background: rgba(255, 255, 255, .5);
+    color: #666;
+    box-shadow: 0 1px 30px -4px #e8e8e8;
+    font-size: 14px;
+    cursor: pointer;
+    transition: color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.sducraft-category-posts__button:hover {
+    color: var(--theme-skin-matching, #505050);
+    box-shadow: 0 1px 20px 6px rgba(80, 80, 80, .12);
+    transform: translateY(-2px);
+}
+
+.sducraft-category-posts__button:disabled {
+    cursor: wait;
+    opacity: .65;
+    transform: none;
+}
+
+.sducraft-category-posts__button.is-loading i {
+    animation: sducraft-category-posts-spin .8s linear infinite;
+}
+
+.sducraft-category-posts__empty {
+    color: #888;
+    text-align: center;
+}
+
+body.dark .sducraft-category-posts__button,
+html.dark .sducraft-category-posts__button {
+    border-color: rgba(255, 255, 255, .15);
+    background: rgba(30, 30, 30, .72);
+    color: rgba(255, 255, 255, .72);
+    box-shadow: none;
+}
+
+@keyframes sducraft-category-posts-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

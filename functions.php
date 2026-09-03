@@ -5,7 +5,7 @@ add_action('wp_enqueue_scripts', function () {
         'sakurairo-child-style',
         get_stylesheet_uri(),
         array(),
-        wp_get_theme()->get('Version')
+        filemtime(get_stylesheet_directory() . '/style.css')
     );
 }, 20);
 
@@ -14,6 +14,7 @@ require_once get_stylesheet_directory() . '/footer/bootstrap.php';
 
 require_once( get_stylesheet_directory() . '/inc/announcement-page.php' );
 require_once get_stylesheet_directory() . '/inc/modpack-post-type.php';
+require_once get_stylesheet_directory() . '/inc/category-posts.php';
 
 /**
  * @author Billadom
@@ -318,35 +319,6 @@ function sducraft_timed_smartslider($atts) {
     );
 }
 add_shortcode('timed_smartslider', 'sducraft_timed_smartslider');
-
-/**
- * @author Billadom
- * 从Sakurairo的archive模板页借来的短代码，似乎有点样式bug，但勉强能用
- * 用法：[category_posts name="公告, 游戏指南" num="6"]
- */
-add_shortcode('cat_posts', function ($atts) {
-	$atts = shortcode_atts(array(
-		'name'   => '',   // 分类 slug 或 ID，逗号分隔可多个
-		'number' => 10,   // 初始展示数量
-	), $atts, 'cat_posts');
-
-	$query = new WP_Query(array(
-		'category_name'   => $atts['name'],
-		'posts_per_page'  => (int) $atts['number'],
-		'ignore_sticky_posts' => 1,
-	));
-
-	ob_start();
-	while ($query->have_posts()) : $query->the_post();
-		get_template_part('tpl/content', 'thumbcard');
-	endwhile;
-	wp_reset_postdata();
-
-	return ob_get_clean();
-});
-
-
-
 
 add_action('wp_enqueue_scripts', function () {
     if (is_front_page()) {
