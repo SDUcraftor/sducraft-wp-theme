@@ -3,9 +3,23 @@
 
     var list = $('#sducraft-modpack-downloads-list');
 
+    function syncPlatformCustom(scope) {
+        $(scope).find('.sducraft-platform-select').each(function () {
+            var custom = $(this).closest('.sducraft-platform-field').find('.sducraft-platform-custom');
+            custom.prop('hidden', this.value !== 'other');
+        });
+    }
+
+    syncPlatformCustom(document);
+
     $('#sducraft-add-download').on('click', function () {
         var index = 'new_' + Date.now();
         list.append(wp.template('sducraft-modpack-download')({ index: index }));
+        syncPlatformCustom(list);
+    });
+
+    list.on('change', '.sducraft-platform-select', function () {
+        syncPlatformCustom($(this).closest('.sducraft-platform-field'));
     });
 
     list.on('click', '.sducraft-remove-download', function () {

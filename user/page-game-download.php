@@ -20,7 +20,7 @@ while (have_posts()) :
         'post_type'              => SDUCRAFT_MODPACK_POST_TYPE,
         'post_status'            => 'publish',
         'posts_per_page'         => -1,
-        'orderby'                => 'modified',
+        'orderby'                => 'date',
         'order'                  => 'DESC',
         'no_found_rows'          => true,
         'update_post_term_cache' => false,
@@ -36,7 +36,7 @@ while (have_posts()) :
                 return $status_difference;
             }
 
-            return strcmp($right->post_modified, $left->post_modified);
+            return strcmp($right->post_date, $left->post_date);
         });
     }
     ?>

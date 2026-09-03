@@ -70,20 +70,42 @@
     box-shadow: 0 14px 34px rgba(25, 32, 40, .14);
 }
 
-.modpack-card--no-image {
-    grid-template-columns: 1fr;
-}
-
 .modpack-card__cover {
-    min-height: 100%;
+    position: relative;
+    min-height: 250px;
     overflow: hidden;
     background: rgba(0, 0, 0, .04);
 }
 
+.modpack-cover-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: color-mix(in srgb, var(--modpack-accent) 72%, var(--modpack-muted));
+    background:
+        linear-gradient(135deg, color-mix(in srgb, var(--modpack-accent) 13%, transparent), transparent),
+        var(--modpack-surface-strong);
+}
+
+.modpack-cover-placeholder i {
+    font-size: 34px;
+    opacity: .72;
+}
+
+.modpack-cover-placeholder span {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0;
+    opacity: .68;
+}
+
 .modpack-card__cover img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    min-height: 250px;
     object-fit: cover;
     transition: transform .35s ease;
 }
@@ -106,19 +128,35 @@
     gap: 20px;
 }
 
-.modpack-card__heading time {
+.modpack-card__dates {
+    display: grid;
     flex: none;
+    gap: 3px;
     padding-top: 4px;
+    text-align: right;
+}
+
+.modpack-card__dates time {
+    flex: none;
     color: var(--modpack-muted);
     font-size: 12px;
 }
 
+.modpack-card__dates time + time {
+    opacity: .78;
+    font-size: 11px;
+}
+
 .modpack-card__title {
-    margin: 8px 0 0;
+    margin: 0;
     font-size: 23px;
     line-height: 1.3;
     font-weight: 600;
     letter-spacing: 0;
+}
+
+.modpack-status + .modpack-card__title {
+    margin-top: 8px;
 }
 
 .modpack-card__title a {
@@ -142,8 +180,7 @@
     font-weight: 600;
 }
 
-.modpack-status--archived,
-.modpack-status--discontinued {
+.modpack-status--archived {
     border-color: rgba(107, 114, 128, .3);
     background: rgba(107, 114, 128, .09);
     color: #68717d;
@@ -300,7 +337,7 @@
 
 .modpack-release__intro h1 {
     max-width: 100%;
-    margin: 10px 0 13px;
+    margin: 0 0 13px;
     color: var(--modpack-text);
     font-size: 31px;
     line-height: 1.25;
@@ -308,6 +345,10 @@
     letter-spacing: 0;
     overflow-wrap: anywhere;
     word-break: break-word;
+}
+
+.modpack-release__intro .modpack-status + h1 {
+    margin-top: 10px;
 }
 
 .modpack-release__intro p {
@@ -320,6 +361,7 @@
 }
 
 .modpack-release__cover {
+    position: relative;
     min-height: 290px;
     margin: 0;
     overflow: hidden;
@@ -327,6 +369,8 @@
 }
 
 .modpack-release__cover img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -358,6 +402,13 @@
 
 .modpack-facts--large dt {
     margin-bottom: 5px;
+}
+
+.modpack-facts--large small {
+    display: block;
+    margin-top: 4px;
+    color: var(--modpack-muted);
+    font-size: 11px;
 }
 
 .modpack-downloads,
@@ -435,8 +486,13 @@ html.dark .modpack-single {
 
     .modpack-card__cover,
     .modpack-card__cover img {
-        min-height: 170px;
-        max-height: 190px;
+        min-height: 0;
+        max-height: none;
+    }
+
+    .modpack-card__cover {
+        min-height: 180px;
+        height: 180px;
     }
 
     .modpack-card__body,
@@ -450,14 +506,21 @@ html.dark .modpack-single {
         display: block;
     }
 
-    .modpack-card__heading time {
+    .modpack-card__dates {
         display: block;
         margin-top: 8px;
+        padding-top: 0;
+        text-align: left;
+    }
+
+    .modpack-card__dates time {
+        display: block;
     }
 
     .modpack-release__cover {
-        min-height: 190px;
-        max-height: 220px;
+        min-height: 210px;
+        height: 210px;
+        max-height: none;
         grid-row: 1;
     }
 

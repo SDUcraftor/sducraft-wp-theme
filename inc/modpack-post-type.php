@@ -54,19 +54,23 @@ add_action('init', 'sducraft_register_modpack_post_type');
 
 function sducraft_modpack_statuses() {
     return array(
-        'pinned'       => '置顶',
-        'maintained'  => '维护中',
-        'archived'    => '已归档',
-        'discontinued'=> '停止维护',
+        'pinned'   => '置顶',
+        'normal'   => '普通',
+        'archived' => '已归档',
     );
 }
 
+function sducraft_normalize_modpack_status($status) {
+    $status = sanitize_key((string) $status);
+    return isset(sducraft_modpack_statuses()[$status]) ? $status : 'normal';
+}
+
 function sducraft_modpack_status_order($status) {
+    $status = sducraft_normalize_modpack_status($status);
     return array(
-        'pinned'        => 1,
-        'maintained'   => 2,
-        'archived'     => 3,
-        'discontinued' => 4,
+        'pinned'   => 1,
+        'normal'   => 2,
+        'archived' => 3,
     )[$status] ?? 2;
 }
 
@@ -99,7 +103,7 @@ function sducraft_render_modpack_details_meta_box($post) {
         'modpack_version'   => array('整合包版本', '例如：4.2.0'),
         'author'            => array('作者', '个人或制作团队'),
     );
-    $status = get_post_meta($post->ID, '_sducraft_modpack_status', true);
+    $status = sducraft_normalize_modpack_status(get_post_meta($post->ID, '_sducraft_modpack_status', true));
     $summary = get_post_meta($post->ID, '_sducraft_modpack_summary', true);
     ?>
     <div class="sducraft-modpack-fields">
@@ -116,7 +120,7 @@ function sducraft_render_modpack_details_meta_box($post) {
             <label for="sducraft-modpack-status"><strong>状态</strong></label>
             <select id="sducraft-modpack-status" name="sducraft_modpack[status]">
                 <?php foreach (sducraft_modpack_statuses() as $value => $label) : ?>
-                    <option value="<?php echo esc_attr($value); ?>" <?php selected($status ?: 'maintained', $value); ?>><?php echo esc_html($label); ?></option>
+                    <option value="<?php echo esc_attr($value); ?>" <?php selected($status, $value); ?>><?php echo esc_html($label); ?></option>
                 <?php endforeach; ?>
             </select>
         </p>
@@ -147,20 +151,47 @@ function sducraft_render_modpack_downloads_meta_box($post) {
     <?php
 }
 
+function sducraft_modpack_platforms() {
+    return array(
+        'windows'   => 'Windows',
+        'linux'     => 'Linux',
+        'macos'     => 'macOS',
+        'android'   => 'Android',
+        'universal' => '全平台',
+        'other'     => '其他',
+    );
+}
+
 function sducraft_render_modpack_download_row($index, $download) {
     $download = wp_parse_args($download, array(
         'label'         => '',
-        'platform'      => '',
+        'platform'      => 'windows',
+        'platform_custom' => '',
         'architecture'  => '',
         'url'           => '',
         'attachment_id' => 0,
     ));
     $prefix = 'sducraft_modpack_downloads[' . $index . ']';
+    $platforms = sducraft_modpack_platforms();
+    $platform = isset($platforms[$download['platform']]) ? $download['platform'] : 'other';
+    $platform_custom = $download['platform_custom'];
+    if ($platform === 'other' && !$platform_custom && !isset($platforms[$download['platform']])) {
+        $platform_custom = $download['platform'];
+    }
     ?>
     <div class="sducraft-download-row">
         <div class="sducraft-download-row__fields">
             <p><label>按钮文字<input type="text" name="<?php echo esc_attr($prefix); ?>[label]" value="<?php echo esc_attr($download['label']); ?>" placeholder="例如：Windows 客户端下载"></label></p>
-            <p><label>平台<input type="text" name="<?php echo esc_attr($prefix); ?>[platform]" value="<?php echo esc_attr($download['platform']); ?>" placeholder="Windows/MacOS/Linux/..."></label></p>
+            <p class="sducraft-platform-field">
+                <label>平台
+                    <select class="sducraft-platform-select" name="<?php echo esc_attr($prefix); ?>[platform]">
+                        <?php foreach ($platforms as $value => $label) : ?>
+                            <option value="<?php echo esc_attr($value); ?>" <?php selected($platform, $value); ?>><?php echo esc_html($label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <input class="sducraft-platform-custom" type="text" name="<?php echo esc_attr($prefix); ?>[platform_custom]" value="<?php echo esc_attr($platform_custom); ?>" placeholder="填写平台名称" <?php echo $platform === 'other' ? '' : 'hidden'; ?>>
+            </p>
             <p><label>架构<input type="text" name="<?php echo esc_attr($prefix); ?>[architecture]" value="<?php echo esc_attr($download['architecture']); ?>" placeholder="x86_64/ARM64/..."></label></p>
         </div>
         <p>
@@ -198,8 +229,8 @@ function sducraft_save_modpack_meta($post_id) {
     }
 
     $statuses = sducraft_modpack_statuses();
-    $status = sanitize_key($details['status'] ?? 'maintained');
-    update_post_meta($post_id, '_sducraft_modpack_status', isset($statuses[$status]) ? $status : 'maintained');
+    $status = sanitize_key($details['status'] ?? 'normal');
+    update_post_meta($post_id, '_sducraft_modpack_status', isset($statuses[$status]) ? $status : 'normal');
     update_post_meta($post_id, '_sducraft_modpack_status_order', sducraft_modpack_status_order($status));
     update_post_meta($post_id, '_sducraft_modpack_summary', sanitize_textarea_field($details['summary'] ?? ''));
 
@@ -222,9 +253,16 @@ function sducraft_save_modpack_meta($post_id) {
             continue;
         }
 
+        $platforms = sducraft_modpack_platforms();
+        $platform = sanitize_key($download['platform'] ?? 'windows');
+        if (!isset($platforms[$platform])) {
+            $platform = 'other';
+        }
+
         $clean_downloads[] = array(
             'label'         => sanitize_text_field($download['label'] ?? ''),
-            'platform'      => sanitize_text_field($download['platform'] ?? ''),
+            'platform'      => $platform,
+            'platform_custom' => $platform === 'other' ? sanitize_text_field($download['platform_custom'] ?? '') : '',
             'architecture'  => sanitize_text_field($download['architecture'] ?? ''),
             'url'           => $url,
             'attachment_id' => $attachment_id,
@@ -282,7 +320,7 @@ add_action('wp_enqueue_scripts', 'sducraft_enqueue_modpack_assets', 30);
 
 function sducraft_get_modpack_data($post_id = 0) {
     $post_id = $post_id ?: get_the_ID();
-    $status_key = get_post_meta($post_id, '_sducraft_modpack_status', true) ?: 'maintained';
+    $status_key = sducraft_normalize_modpack_status(get_post_meta($post_id, '_sducraft_modpack_status', true));
     $statuses = sducraft_modpack_statuses();
     $downloads = get_post_meta($post_id, '_sducraft_modpack_downloads', true);
 
@@ -291,7 +329,7 @@ function sducraft_get_modpack_data($post_id = 0) {
         'modpack_version'   => get_post_meta($post_id, '_sducraft_modpack_modpack_version', true),
         'author'            => sducraft_get_modpack_field($post_id, 'author'),
         'status'            => $status_key,
-        'status_label'      => $statuses[$status_key] ?? $statuses['maintained'],
+        'status_label'      => $statuses[$status_key] ?? $statuses['normal'],
         'summary'           => get_post_meta($post_id, '_sducraft_modpack_summary', true),
         'downloads'         => is_array($downloads) ? $downloads : array(),
     );
@@ -325,6 +363,17 @@ function sducraft_get_download_size($download) {
     return $path && is_file($path) ? size_format(filesize($path)) : '';
 }
 
+function sducraft_get_download_platform_label($download) {
+    $platforms = sducraft_modpack_platforms();
+    $platform = $download['platform'] ?? '';
+
+    if ($platform === 'other') {
+        return trim((string) ($download['platform_custom'] ?? '')) ?: $platforms['other'];
+    }
+
+    return $platforms[$platform] ?? (string) $platform;
+}
+
 function sducraft_modpack_admin_columns($columns) {
     return array(
         'cb'                => $columns['cb'],
@@ -343,9 +392,9 @@ function sducraft_render_modpack_admin_column($column, $post_id) {
     } elseif ($column === 'modpack_version') {
         echo esc_html(get_post_meta($post_id, '_sducraft_modpack_modpack_version', true) ?: '—');
     } elseif ($column === 'modpack_status') {
-        $status = get_post_meta($post_id, '_sducraft_modpack_status', true) ?: 'maintained';
+        $status = sducraft_normalize_modpack_status(get_post_meta($post_id, '_sducraft_modpack_status', true));
         $statuses = sducraft_modpack_statuses();
-        echo esc_html($statuses[$status] ?? $statuses['maintained']);
+        echo esc_html($statuses[$status] ?? $statuses['normal']);
         printf(
             '<span class="sducraft-modpack-quick-data" hidden data-minecraft-version="%s" data-modpack-version="%s" data-author="%s" data-status="%s"></span>',
             esc_attr(sducraft_get_modpack_field($post_id, 'minecraft_version')),

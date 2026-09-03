@@ -31,6 +31,14 @@
     width: 100%;
 }
 
+.sducraft-download-row__fields select {
+    width: 100%;
+}
+
+.sducraft-platform-custom {
+    margin-top: 6px;
+}
+
 .sducraft-remove-download {
     margin-left: 12px;
 }
