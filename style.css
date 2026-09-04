@@ -77,6 +77,8 @@ html.dark .custom-card:hover {
     transform: none;
 }
 
+/* 主页显示文章类css */
+
 .sducraft-category-posts__list {
     display: grid;
     gap: 24px;
@@ -170,4 +172,36 @@ html.dark .sducraft-category-posts__button {
     to {
         transform: rotate(360deg);
     }
+}
+
+/* 贡献成员页css修改 */
+/* 180px，圆形 */
+.wp-block-group.profile-media-shrink .wp-block-media-text.is-image-fill-element .wp-block-media-text__media {
+  width: 180px;
+  height: 180px;
+  min-width: 180px;
+  max-width: 180px;
+  min-height: 180px;
+  max-height: 180px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wp-block-group.profile-media-shrink .wp-block-media-text.is-image-fill-element .wp-block-media-text__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: relative;
+  top: 0;
+  left: 0;
+  display: block;
+}
+
+.wp-block-group.profile-media-shrink .wp-block-media-text {
+  align-items: center;
 }
