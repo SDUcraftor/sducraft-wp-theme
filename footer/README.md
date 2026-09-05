@@ -12,7 +12,7 @@ continue to change the original footer safely.
 - `mc-footer.css`: component-scoped styles.
 - `mc-world.js`: world layers, block definitions, and special structures.
 - `mc-footer.js`: interaction state machine.
-- `assets/`: block textures, tools, particles, and audio.
+- `../assets/minecraft/`: shared block textures, tools, particles, and audio.
 
 The child theme loads this directory from its root `functions.php`:
 
@@ -27,7 +27,7 @@ footer interaction code.
 
 - `blocks` defines each block's label, texture, mining hardness, break sound,
   and whether it is mineable. Texture and sound values may be paths relative
-  to `footer/assets/` or complete external URLs.
+  to `assets/minecraft/` or complete external URLs.
 - `layers` defines the world from top to bottom. Change a layer's `count` to
   change its thickness, or add another entry using a type from `blocks`.
 - `structures` contains functions that replace base-layer cells with trees,
@@ -114,7 +114,7 @@ The site-wide default can also be replaced from PHP:
 
 ```php
 add_filter('sducraft_mc_footer_default_easter_egg_sound', function () {
-    return get_stylesheet_directory_uri() . '/footer/assets/audio/my-default.ogg';
+    return get_stylesheet_directory_uri() . '/assets/minecraft/audio/my-default.ogg';
 });
 ```
 

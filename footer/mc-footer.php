@@ -53,7 +53,7 @@ $mc_footer_easter_egg_data = array_map(
     $mc_footer_easter_eggs
 );
 
-$mc_footer_assets = trailingslashit(get_stylesheet_directory_uri()) . 'footer/assets/';
+$mc_footer_assets = trailingslashit(get_stylesheet_directory_uri()) . 'assets/minecraft/';
 $mc_footer_default_easter_egg_sound = apply_filters(
     'sducraft_mc_footer_default_easter_egg_sound',
     $mc_footer_assets . 'audio/Mob.villager.yes2.wav.ogg'

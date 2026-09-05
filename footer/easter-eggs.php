@@ -22,7 +22,7 @@ add_filter('sducraft_mc_footer_easter_eggs', function ($eggs) {
             <figure class="mc-easter-egg-reward">
                 <img
                     class="mc-easter-egg-reward__image"
-                    src="<?php echo esc_url(get_stylesheet_directory_uri() . '/footer/assets/blocks/bedrock.png'); ?>"
+                    src="<?php echo esc_url(get_stylesheet_directory_uri() . '/assets/minecraft/blocks/bedrock.png'); ?>"
                     alt="神秘基岩"
                     width="160"
                     height="160"
