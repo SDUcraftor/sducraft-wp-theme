@@ -1,12 +1,21 @@
 <?php
 
 add_action('wp_enqueue_scripts', function () {
-    wp_enqueue_style(
-        'sakurairo-child-style',
-        get_stylesheet_uri(),
-        array(),
-        filemtime(get_stylesheet_directory() . '/style.css')
+    // 注册多个样式文件
+    $styles = array(
+        'sakurairo-child-style' => 'style.css',
+        'sducraft-letter' => 'css/letter.css',
+        'sducraft-mc-sign' => 'css/mc-sign.css',
     );
+    
+    foreach ($styles as $handle => $file) {
+        wp_enqueue_style(
+            $handle,
+            get_stylesheet_directory_uri() . '/' . $file,
+            array(),
+            filemtime(get_stylesheet_directory() . '/' . $file)
+        );
+    }
 }, 20);
 
 require_once get_stylesheet_directory() . '/footer/bootstrap.php';
