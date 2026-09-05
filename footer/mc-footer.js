@@ -67,17 +67,26 @@
             const entries = JSON.parse(footer.dataset.easterEggs || '[]');
             if (!Array.isArray(entries)) return [];
 
-            return entries.filter((entry) => (
-                entry
-                && typeof entry === 'object'
-                && typeof entry.id === 'string'
-                && Number.isFinite(Number(entry.x))
-                && Number.isFinite(Number(entry.depth))
-            )).map((entry) => ({
-                ...entry,
-                x: Math.min(1, Math.max(0, Number(entry.x))),
-                depth: Math.trunc(Number(entry.depth)),
-            }));
+            return entries.reduce((validEntries, entry) => {
+                if (!entry || typeof entry !== 'object' || typeof entry.id !== 'string') {
+                    return validEntries;
+                }
+
+                const randomX = entry.x === 'random';
+                const randomDepth = entry.depth === 'random';
+                if ((!randomX && !Number.isFinite(Number(entry.x)))
+                    || (!randomDepth && !Number.isFinite(Number(entry.depth)))) {
+                    return validEntries;
+                }
+
+                validEntries.push({
+                    ...entry,
+                    x: randomX ? 'random' : Math.min(1, Math.max(0, Number(entry.x))),
+                    depth: randomDepth ? 'random' : Math.trunc(Number(entry.depth)),
+                    block: typeof entry.block === 'string' ? entry.block.trim() : '',
+                });
+                return validEntries;
+            }, []);
         } catch (_) {
             return [];
         }
@@ -562,25 +571,71 @@
         return block?.dataset.mineable === 'true' && !block.classList.contains('is-air');
     }
 
+    function randomItem(items) {
+        return items.length ? items[Math.floor(Math.random() * items.length)] : null;
+    }
+
+    function findNearestMineableBlock(row, preferredCol, cols, rows) {
+        const maxDistance = cols + rows;
+        for (let distance = 0; distance <= maxDistance; distance += 1) {
+            for (let rowOffset = -distance; rowOffset <= distance; rowOffset += 1) {
+                const colOffset = distance - Math.abs(rowOffset);
+                const candidates = colOffset === 0
+                    ? [[row + rowOffset, preferredCol]]
+                    : [[row + rowOffset, preferredCol - colOffset], [row + rowOffset, preferredCol + colOffset]];
+                const match = candidates.find(([candidateRow, candidateCol]) => {
+                    if (candidateRow < 0 || candidateRow >= rows || candidateCol < 0 || candidateCol >= cols) {
+                        return false;
+                    }
+                    return isMineableBlock(world.children[(candidateRow * cols) + candidateCol]);
+                });
+                if (match) return world.children[(match[0] * cols) + match[1]];
+            }
+        }
+        return null;
+    }
+
+    function findNearbyBlockType(type, row, preferredCol, cols, rows, radius = 3) {
+        const matches = [];
+        for (let candidateRow = Math.max(0, row - radius); candidateRow <= Math.min(rows - 1, row + radius); candidateRow += 1) {
+            for (let candidateCol = Math.max(0, preferredCol - radius); candidateCol <= Math.min(cols - 1, preferredCol + radius); candidateCol += 1) {
+                const distance = Math.abs(candidateRow - row) + Math.abs(candidateCol - preferredCol);
+                const block = world.children[(candidateRow * cols) + candidateCol];
+                if (distance <= radius && isMineableBlock(block) && block.dataset.type === type) {
+                    matches.push({block, distance});
+                }
+            }
+        }
+        if (!matches.length) return null;
+
+        const nearestDistance = Math.min(...matches.map((match) => match.distance));
+        return randomItem(matches.filter((match) => match.distance === nearestDistance)).block;
+    }
+
+    function findRandomBlockType(type) {
+        return randomItem(Array.from(world.children).filter((block) => (
+            isMineableBlock(block) && block.dataset.type === type
+        )));
+    }
+
     function bindEasterEggs(cols, rows, surfaceRow) {
         const resolved = [];
 
         easterEggs.forEach((egg) => {
-            const row = surfaceRow + egg.depth;
+            const row = egg.depth === 'random'
+                ? Math.floor(Math.random() * rows)
+                : surfaceRow + egg.depth;
             if (row < 0 || row >= rows) return;
 
-            const preferredCol = Math.round(egg.x * (cols - 1));
-            let target = null;
-            for (let offset = 0; offset < cols && !target; offset += 1) {
-                const candidates = offset === 0
-                    ? [preferredCol]
-                    : [preferredCol - offset, preferredCol + offset];
-                const targetCol = candidates.find((col) => {
-                    if (col < 0 || col >= cols) return false;
-                    return isMineableBlock(world.children[(row * cols) + col]);
-                });
-                if (targetCol !== undefined) target = world.children[(row * cols) + targetCol];
-            }
+            const preferredCol = egg.x === 'random'
+                ? Math.floor(Math.random() * cols)
+                : Math.round(egg.x * (cols - 1));
+            const fallback = findNearestMineableBlock(row, preferredCol, cols, rows);
+            const target = egg.block
+                ? findNearbyBlockType(egg.block, row, preferredCol, cols, rows)
+                    || findRandomBlockType(egg.block)
+                    || fallback
+                : fallback;
             if (!target) return;
 
             const current = eggsByBlock.get(target) || [];
@@ -590,6 +645,8 @@
             resolved.push({
                 id: egg.id,
                 requestedX: egg.x,
+                requestedDepth: egg.depth,
+                requestedBlock: egg.block || null,
                 column: Number(target.dataset.column),
                 columnRatio: Number(target.dataset.xRatio),
                 depth: Number(target.dataset.depth),

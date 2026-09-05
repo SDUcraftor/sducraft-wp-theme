@@ -72,9 +72,34 @@ Register an easter egg in `easter-eggs.php`. The horizontal
 position is resolution independent; it is resolved to the nearest mineable
 block in the requested depth when the world is built.
 
+Both coordinates are explicit. Use a number for a stable position or the
+string `random` to choose that coordinate whenever the world is built:
+
+```php
+'x'     => 'random', // Or a ratio from 0 (left) to 1 (right).
+'depth' => 'random', // Or a depth relative to grass.
+```
+
+Omitting either coordinate still makes the registration invalid; randomness
+must be requested explicitly.
+
+Add `block` to prefer a particular mineable block type:
+
+```php
+'x'     => 0.65,
+'depth' => 7,
+'block' => 'stone',
+```
+
+The footer first searches within three blocks of the requested position. If
+that area has no matching block, it chooses a random matching block anywhere
+in the world. If the world contains no mineable block of that type, it falls
+back to the nearest mineable block at the requested position. Valid type names
+come from the `blocks` object in `mc-world.js`.
+
 The file contains one complete, enabled example using the bundled bedrock
 texture. Copy that registration when adding another easter egg, then directly
-replace its title, image markup, description, `x`, and `depth` values.
+replace its title, image markup, description, and positioning values.
 
 Every marked block plays `Mob.villager.yes2.wav.ogg` when it is discovered.
 Override the sound for one easter egg with a URL or an asset-relative path, or
