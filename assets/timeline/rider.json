@@ -1,0 +1,42 @@
+{
+  "default": { 
+    "skin": "skins/nijika.png", 
+    "model": "slim" 
+  }, 
+  "switches": [
+    {
+      "afterFromEnd": 38,
+      "skin": "skins/atri.png", 
+      "model": "slim"
+    },
+    {
+      "afterFromEnd": 35,
+      "skin": "skins/Mingzu_.png", 
+      "model": "slim"
+    },
+    {
+      "afterFromEnd": 28,
+      "skin": "skins/sheep.png", 
+      "model": "classic"
+    },
+    {
+      "afterFromEnd": 15,
+      "skin": "skins/steve.png", 
+      "model": "classic"
+    },
+    {
+      "afterFromEnd": 2,
+      "skin": "none"
+    }
+  ],
+  "branches": {
+    "vanilla": {
+      "skin": "skins/steve.png",
+      "model": "classic"
+    },
+    "restoration": {
+      "skin": "skins/steve.png",
+      "model": "classic"
+    }
+  }
+}

@@ -73,3 +73,10 @@ git diff --check
 ```
 
 涉及界面或异步资源时，还应检查桌面端与移动端、浅色与暗色模式、直接刷新以及 Sakurairo PJAX 导航后的表现。
+
+
+## 时间线与部署清理
+
+时间线入口为 `category-our_story.php`，正式资源清单见 [assets/timeline/README.md](assets/timeline/README.md)，皮肤设置见 [assets/timeline/skins/README.md](assets/timeline/skins/README.md)。
+
+`tests/` 保留 4 个有效回归检查及说明，覆盖本地显示、双轨、滚动和 Sakurairo 线上兼容性；不需要上传服务器。工作区只保留 `local-real-timeline.php` 作为当前预览。早期原型、旧依赖和废弃资源已移至工作区 `_archive/timeline-retired-20260907/`，不属于子主题发布文件。
