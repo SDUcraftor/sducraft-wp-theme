@@ -2,8 +2,7 @@
 /**
  * Site-specific Minecraft footer easter eggs.
  *
- * Keep registrations in this file so the footer's core interaction files can
- * be updated independently. See README.md for complete examples and events.
+ * Keep SDUcraft registrations separate from the footer interaction code.
  */
 
 defined('ABSPATH') || exit;
@@ -22,7 +21,7 @@ add_filter('sducraft_mc_footer_easter_eggs', function ($eggs) {
             <figure class="mc-easter-egg-reward">
                 <img
                     class="mc-easter-egg-reward__image"
-                    src="<?php echo esc_url(get_stylesheet_directory_uri() . '/assets/minecraft/blocks/bedrock.png'); ?>"
+                    src="<?php echo esc_url(get_stylesheet_directory_uri() . '/assets/minecraft/texture/block/bedrock.png'); ?>"
                     alt="神秘基岩"
                     width="160"
                     height="160"

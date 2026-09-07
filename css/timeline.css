@@ -1,6 +1,6 @@
 @font-face {
     font-family:MC;
-    src:url('../assets/timeline/Minecraft.ttf') format('truetype');
+    src:url('../assets/minecraft/font/Minecraft.ttf') format('truetype');
     font-display:swap;
 }
 
@@ -317,23 +317,6 @@
     background:linear-gradient(120deg,#30271ef5,#241e18f5);
 }
 
-.mc-card-label {
-    display:flex;
-    justify-content:space-between;
-    color:#929c87;
-    font-size:10px;
-    letter-spacing:1px;
-    margin-bottom:11px;
-}
-
-.is-milestone .mc-card-label span:first-child {
-    color:var(--accent);
-}
-
-.mc-card-label span:last-child {
-    font-family:MC,monospace;
-}
-
 .mc-gui-card h3 {
     font-size:21px;
     line-height:1.5;
@@ -585,7 +568,7 @@
     position:relative;
     aspect-ratio:146/180;
     width:100%;
-    background-image:url('../assets/timeline/textures/book.png');
+    background-image:url('../assets/minecraft/texture/gui/book.png');
     background-repeat:no-repeat;
     background-size:175.3425% 142.2222%;
     background-position:18.1818% 0;
@@ -731,7 +714,7 @@
     top:300px;
     bottom:0;
     width:40px;
-    background:url('../assets/timeline/textures/rail.png') center/40px 40px repeat-y;
+    background:url('../assets/minecraft/texture/block/rail.png') center/40px 40px repeat-y;
     image-rendering:pixelated;
 }
 
@@ -876,9 +859,6 @@
         font-size:12px;
         -webkit-line-clamp:4;
     }
-    .mc-card-label {
-        font-size:9px;
-    }
     .mc-stop-anchor {
         left:20px;
     }
@@ -1000,13 +980,12 @@
 .mc-milestone-block.has-photo { min-height: 390px; }
 .mc-gui-card { width: 37%; padding: 23px 25px 40px; background: #22281ff5; border: 3px solid #675637; box-shadow: inset 0 0 0 1px #8d775144, 5px 7px 0 #0c140bb0; }
 .mc-milestone-block.is-active .mc-gui-card { background: #303629f7; border-color: #bfaa72; }
-.mc-card-label { font-size: 10px; }
 .mc-entry-title { border: 0; background: none; color: inherit; font: inherit!important; font-weight: inherit!important; text-align: left; padding: 0; line-height: inherit; }
 .mc-entry-title:hover { color: #f2d497; text-decoration: underline; text-underline-offset: 5px; }
 .mc-card-body { -webkit-line-clamp: 4; }
 .mc-chest-btn { width: 96px; height: 116px; right: -12px; bottom: -29px; }
 .mc-station-sign { min-height: 40px; left: calc(50% - 65px); padding: 8px 10px; cursor: pointer; }
-.mc-memory-display { position: absolute; left: 63%; top: 50%; transform: translateY(-50%); width: 37%; margin: 0; padding: 8px; border: 6px solid #66502f; background: url('../assets/timeline/textures/oak_planks.png') center / 64px; box-shadow: 5px 7px 0 #0a100caa, inset 0 0 0 2px #b89c67; }
+.mc-memory-display { position: absolute; left: 63%; top: 50%; transform: translateY(-50%); width: 37%; margin: 0; padding: 8px; border: 6px solid #66502f; background: url('../assets/minecraft/texture/block/oak_planks.png') center / 64px; box-shadow: 5px 7px 0 #0a100caa, inset 0 0 0 2px #b89c67; }
 .mc-milestone-block[data-side="right"] .mc-memory-display { left: 0; }
 .mc-memory-display button { display: block; border: 0; padding: 0; width: 100%; background: #111b15; }
 .mc-memory-display img { display: block; width: 100%; height: auto; aspect-ratio: 16/10; object-fit: contain; background: #171c16; image-rendering: auto; }
@@ -1020,7 +999,7 @@
 
 /* Nine-slice original book texture: the corners keep their size in every orientation. */
 .mc-story-dialog { width: min(490px,94vw); max-height: calc(100svh - 20px); overflow: visible; }
-.mc-book { aspect-ratio: auto; height: min(var(--book-height,480px),calc(100svh - 88px)); min-height: 0; border: 22px solid transparent; border-image: url('../assets/timeline/textures/book-frame.png') 12 fill stretch; background: none; filter: drop-shadow(5px 7px 0 #0006); }
+.mc-book { aspect-ratio: auto; height: min(var(--book-height,480px),calc(100svh - 88px)); min-height: 0; border: 22px solid transparent; border-image: url('../assets/minecraft/texture/gui/book-frame.png') 12 fill stretch; background: none; filter: drop-shadow(5px 7px 0 #0006); }
 .mc-book-page { position: absolute; inset: 10px 15px 7px 17px; }
 .mc-dialog-close { top: -12px; right: -12px; width: 36px; height: 36px; font-size: 25px!important; display: grid; place-items: center; padding: 0; color: #eeddb5; border: 2px solid #8b6c3d; background: #493522; }
 .mc-book-page h2 { padding-right: 22px; font-size: 21px; }
@@ -1098,8 +1077,6 @@
 .mc-dialog-close::after {transform:translate(-50%,-50%) rotate(-45deg);}
 
 .mc-start-origin {display:inline-block;margin:20px 24px;color:#e4d7ad;text-decoration:underline;text-underline-offset:5px;}
-.mc-milestone-block[data-origin="restoration"] .mc-card-label {color:#a9d2be;}
-.mc-milestone-block[data-origin="vanilla"] .mc-card-label {color:#edbc87;}
 .mc-milestone-block[data-origin="merge"] .mc-gui-card {border-color:#c8b473;}
 @media (max-width:600px) {
  .mc-milestone-block[data-origin="restoration"],.mc-milestone-block[data-origin="vanilla"] {padding-left:86px;}
@@ -1107,12 +1084,7 @@
 }
 
 /* Distinct displays for buildings and shared memories. */
-.mc-milestone-block[data-photo-style="building"] .mc-memory-display {width:40%;border-color:#b7a27a;background:#29271f;}
-.mc-milestone-block[data-photo-style="building"] .mc-memory-display img {aspect-ratio:4/3;object-fit:contain;background:#171c19;}
-.mc-milestone-block[data-photo-style="gathering"] .mc-memory-display {box-shadow:8px 8px 0 #3a2c1c,13px 13px 0 #a48d5e55;}
-.mc-milestone-block[data-photo-style="gathering"] .mc-memory-display::after {content:"";position:absolute;inset:0;pointer-events:none;border-top:5px solid #ddcfa055;}
 @media(max-width:600px) {
- .mc-milestone-block[data-photo-style] .mc-memory-display {width:100%;}
  .mc-year-nav,.mc-journey-hud {transition:transform .2s ease,opacity .2s ease;}
  .mc-viewport.is-scrolling .mc-year-nav:not(:focus-within) {transform:translateY(-120%);opacity:0;pointer-events:none;}
  .mc-viewport.is-scrolling .mc-journey-hud {transform:translateY(140%);opacity:0;pointer-events:none;}

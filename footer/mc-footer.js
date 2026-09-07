@@ -149,8 +149,8 @@
         explosion: assetUrl('audio/Explosion1.ogg'),
         landing: assetUrl('audio/Grass_dig2.ogg'),
         easterEggDefault: footer.dataset.defaultEasterEggSound || '',
-        flint: assetUrl('tools/flint_and_steel.png'),
-        pickaxe: assetUrl('tools/iron_pickaxe.png'),
+        flint: assetUrl('texture/item/flint_and_steel.png'),
+        pickaxe: assetUrl('texture/item/iron_pickaxe.png'),
     };
 
     const audio = {
@@ -447,7 +447,7 @@
             particle.style.setProperty('--particle-y', `${y}px`);
             particle.style.setProperty('--particle-delay', `${(index % 6) * 18}ms`);
             particle.style.setProperty('--particle-duration', `${smoke ? 720 + (index % 5) * 55 : 460 + (index % 4) * 45}ms`);
-            particle.style.setProperty('--particle-frame', `url("${assetUrl(`particles/${smoke ? 'big_smoke' : 'explosion'}_${frame}.png`)}")`);
+            particle.style.setProperty('--particle-frame', `url("${assetUrl(`texture/particle/${smoke ? 'big_smoke' : 'explosion'}_${frame}.png`)}")`);
             fragment.append(particle);
         }
 
@@ -735,7 +735,7 @@
         mining.block.style.setProperty('--mining-progress', progress.toFixed(3));
         if (stage !== mining.stage) {
             mining.stage = stage;
-            mining.block.style.setProperty('--destroy-texture', `url("${assetUrl(`particles/destroy_stage_${stage}.png`)}")`);
+            mining.block.style.setProperty('--destroy-texture', `url("${assetUrl(`texture/particle/destroy_stage_${stage}.png`)}")`);
         }
         if (progress >= 1) {
             breakBlock(mining.block);

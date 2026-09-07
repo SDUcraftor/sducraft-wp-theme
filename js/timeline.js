@@ -104,6 +104,37 @@
             }
             return result;
         }
+        function contentPages(root, limit) {
+            const result = [], buffer = document.createElement('div');
+            const flush = () => {
+                if (buffer.textContent.trim() || buffer.children.length) result.push(...textPages(buffer, limit));
+                buffer.replaceChildren();
+            };
+            for (const child of root.childNodes) {
+                const clone = child.cloneNode(true);
+                const images = clone.nodeType === Node.ELEMENT_NODE
+                    ? (clone.matches('img') ? [clone] : [...clone.querySelectorAll('img')]) : [];
+                if (!images.length) {
+                    buffer.append(clone);
+                    if (buffer.textContent.length >= limit) flush();
+                    continue;
+                }
+                flush();
+                if (clone.matches('figure')) result.push(clone);
+                else {
+                    const figure = document.createElement('figure');
+                    images.forEach(image => figure.append(image.closest('a')?.cloneNode(true) || image.cloneNode(true)));
+                    const caption = clone.textContent.trim();
+                    if (caption) {
+                        const figcaption = document.createElement('figcaption');
+                        figcaption.textContent = caption; figure.append(figcaption);
+                    }
+                    result.push(figure);
+                }
+            }
+            flush();
+            return result.length ? result : [root.cloneNode(true)];
+        }
         function buildPages() {
             dialog.classList.remove('is-photo-page');
             const template = app.querySelector(`#mc-detail-${entry}`);
@@ -116,16 +147,16 @@
             dialog.style.setProperty('--book-height', `${textBookHeight}px`);
             const style = getComputedStyle(content);
             const limit = Math.max(40, Math.floor(content.clientWidth / parseFloat(style.fontSize)) * Math.max(2, Math.floor(content.clientHeight / parseFloat(style.lineHeight)) - 1));
-            pages = textPages(text, limit);
-            fragment.querySelectorAll('figure').forEach(figure => pages.push(figure.cloneNode(true)));
+            pages = contentPages(text, limit);
+            [...fragment.children].filter(element => element.matches('figure')).forEach(figure => pages.push(figure.cloneNode(true)));
             pageIndex = Math.min(pageIndex, pages.length - 1);
             paintPage();
         }
         function paintPage() {
             content.replaceChildren(pages[pageIndex].cloneNode(true)); content.scrollTop = 0;
-            const photo = content.querySelector('figure img');
+            const photo = content.querySelector('img');
             dialog.classList.toggle('is-photo-page', Boolean(photo));
-            const ratio = photo ? Number(photo.getAttribute('width')) / Number(photo.getAttribute('height')) : 0;
+            const ratio = photo ? Number(photo.getAttribute('width')) / Number(photo.getAttribute('height')) || 16 / 9 : 0;
             dialog.style.setProperty('--book-height', `${ratio ? Math.min(innerHeight - 88, Math.max(380, 190 + content.clientWidth / ratio)) : textBookHeight}px`);
             dialog.querySelector('.mc-book-page-number').textContent = `第 ${pageIndex + 1} / ${pages.length} 页`;
             dialog.querySelector('.mc-book-prev').disabled = pageIndex === 0;
@@ -152,7 +183,10 @@
                 if (button.classList.contains('mc-chest-btn') && world && !reduce.matches) await world.openChest(button);
                 if (disposed || !button.isConnected) return;
                 dialog.showModal(); buildPages();
-                if (button.dataset.photo) {pageIndex = pages.findIndex(page => page.matches('figure')); if(pageIndex < 0) pageIndex = 0; paintPage();}
+                if (button.dataset.photo) {
+                    pageIndex = pages.findIndex(page => page.matches?.('[data-featured-page]'));
+                    pageIndex = Math.max(0, pageIndex); paintPage();
+                }
             } finally {button.removeAttribute('aria-busy'); opening = false;}
         }
         listen(app, 'click', event => {

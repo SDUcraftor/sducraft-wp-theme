@@ -1,12 +1,12 @@
 # 矿车乘客配置
 
-修改 `../rider.json`（即 assets/timeline/rider.json），刷新时间线即可生效。皮肤路径相对于 rider.json。
+修改本目录的 `rider.json`（即 `assets/skin/rider.json`），刷新时间线即可生效。皮肤路径相对于 `rider.json`。
 
 ```json
 {
-  "default": {"skin": "skins/steve.png", "model": "classic"},
+  "default": {"skin": "steve.png", "model": "classic"},
   "switches": [
-    {"afterFromEnd": 10, "skin": "skins/my-skin.png", "model": "slim"},
+    {"afterFromEnd": 10, "skin": "my-skin.png", "model": "slim"},
     {"afterFromEnd": 3, "skin": "none"}
   ]
 }
@@ -20,7 +20,7 @@
 - 多条规则自动按经过顺序应用；向上回看时也会恢复对应皮肤。超出节点数量的规则忽略。
 - 图片缺失或尺寸不符时回退默认 Steve，时间线仍可阅读。新增文件随子主题一起上传；如启用了 CDN 缓存，需要清理对应文件缓存。
 
-默认配置没有切换规则，全程使用内置 Steve。所有人物几何共用现有场景渲染器，与矿车一起转向，不引入新 WebGL 上下文或第三方依赖。
+所有人物几何共用时间线场景渲染器，并与矿车一起转向。
 
 ## 两条起源支线
 
@@ -28,8 +28,8 @@ rider.json 新增 branches 配置（和 default、switches 同级）：
 
 ```json
 "branches": {
-  "restoration": {"skin": "skins/steve.png", "model": "classic"},
-  "vanilla": {"skin": "skins/alex.png", "model": "slim"}
+  "restoration": {"skin": "steve.png", "model": "classic"},
+  "vanilla": {"skin": "alex.png", "model": "slim"}
 }
 ```
 

@@ -287,7 +287,7 @@ export async function createWorld(app) {
     // A seated, articulated skin model shares the cart's transform and WebGL context.
     const rider = new THREE.Group(); cart.add(rider);
     rider.position.set(0,8,-3); rider.scale.setScalar(1.45);
-    let riderConfig = {default:{skin:'skins/steve.png',model:'classic'},switches:[]};
+    let riderConfig = {default:{skin:'steve.png',model:'classic'},switches:[]};
     const configURL = new URL(app.dataset.riderConfig,document.baseURI);
     try {
         const response=await fetch(configURL,{cache:'no-cache'});
@@ -298,9 +298,9 @@ export async function createWorld(app) {
     const switches=(Array.isArray(riderConfig.switches)?riderConfig.switches:[])
         .filter(rule=>Number.isInteger(rule.afterFromEnd)&&rule.afterFromEnd>=1)
         .map(rule=>({...normalize(rule),afterFromEnd:rule.afterFromEnd})).sort((a,b)=>b.afterFromEnd-a.afterFromEnd);
-    const branchSkins={restoration:normalize(riderConfig.branches?.restoration||{skin:'skins/steve.png'}),vanilla:normalize(riderConfig.branches?.vanilla||{skin:'skins/alex.png',model:'slim'})};
+    const branchSkins={restoration:normalize(riderConfig.branches?.restoration||{skin:'steve.png'}),vanilla:normalize(riderConfig.branches?.vanilla||{skin:'alex.png',model:'slim'})};
     const skinTextures=new Map();
-    await Promise.all([...new Set(['skins/steve.png',defaultSkin.skin,branchSkins.restoration.skin,branchSkins.vanilla.skin,...switches.map(rule=>rule.skin)])].filter(name=>name!=='none').map(async name=>{
+    await Promise.all([...new Set(['steve.png',defaultSkin.skin,branchSkins.restoration.skin,branchSkins.vanilla.skin,...switches.map(rule=>rule.skin)])].filter(name=>name!=='none').map(async name=>{
         try {
             const texture=own(await loader.loadAsync(new URL(name,configURL).href));
             if(texture.image.width!==64 || texture.image.height!==64) {console.warn('Timeline rider: expected a 64×64 skin:',name);return;}
@@ -315,7 +315,7 @@ export async function createWorld(app) {
         rider.userData.key=key;rider.clear();riderResources.splice(0).forEach(resource=>{resource.dispose();owned.delete(resource);});
         rider.visible=setting.skin!=='none';if(riderTarget!==branchRider)app.dataset.riderSkin=setting.skin;
         if(!rider.visible)return;
-        const texture=skinTextures.get(setting.skin)||skinTextures.get('skins/steve.png');
+        const texture=skinTextures.get(setting.skin)||skinTextures.get('steve.png');
         if(!texture) {rider.visible=false;return;}
         const mat=own(new THREE.MeshLambertMaterial({map:texture,alphaTest:.5,side:THREE.DoubleSide}));riderResources.push(mat);
         // Standard Minecraft 64×64 unfolded cuboid UVs, including the second skin layer.

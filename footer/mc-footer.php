@@ -76,7 +76,7 @@ $mc_footer_default_easter_egg_sound = apply_filters(
         <div class="mc-footer__blocks" id="mc-surface-blocks" aria-hidden="true"></div>
 
         <button class="mc-tnt" id="mc-tnt" type="button" aria-label="<?php echo esc_attr__('Try to ignite the TNT', 'sducraft'); ?>" hidden>
-            <img src="<?php echo esc_url($mc_footer_assets . 'blocks/tnt_side.png'); ?>" alt="" draggable="false">
+            <img src="<?php echo esc_url($mc_footer_assets . 'texture/block/tnt_side.png'); ?>" alt="" draggable="false">
             <span class="mc-tnt__spark" aria-hidden="true"></span>
         </button>
 

@@ -28,6 +28,7 @@ SDUcraft 官网使用的 WordPress 子主题，基于
 | 整合包卡片和前端交互 | `template-parts/modpack-card.php`、`css/modpack.css`、`js/modpack-page.js` |
 | 公告页面 | `inc/announcement-page.php`、`user/page-announcement.php` |
 | 首页分类文章短代码 | `inc/category-posts.php`、`js/category-posts.js` |
+| MC 历史时间线 | `inc/timeline.php`、`category-our_story.php`、`template-parts/timeline.php` |
 | Minecraft 交互页脚 | `footer/`（详见 [`footer/README.md`](footer/README.md)） |
 | 全站样式和基础扩展 | `style.css`、`functions.php` |
 
@@ -52,9 +53,8 @@ SDUCraft/
 
 - 优先通过子主题覆盖或扩展父主题，避免直接修改 `Sakurairo` 源码。
 - 可复用或持续增长的功能应放入 `inc/`、`template-parts/` 或独立组件目录，并由 `functions.php` 引入。
-- 新增 PHP 函数、选项和脚本句柄使用 `sducraft_` 前缀；已有历史命名保持兼容。
+- 新增 PHP 函数、选项和脚本句柄使用 `sducraft_` 前缀。
 - 页面专用脚本和样式仅在对应页面加载，并在修改后更新资源版本或文件时间戳以避免缓存问题。
-- 修改现有短代码、字段或路由时，除非有明确要求，应保留兼容处理。
 
 ## 修改后检查
 
@@ -77,6 +77,4 @@ git diff --check
 
 ## 时间线与部署清理
 
-时间线入口为 `category-our_story.php`，正式资源清单见 [assets/timeline/README.md](assets/timeline/README.md)，皮肤设置见 [assets/timeline/skins/README.md](assets/timeline/skins/README.md)。
-
-`tests/` 保留 4 个有效回归检查及说明，覆盖本地显示、双轨、滚动和 Sakurairo 线上兼容性；不需要上传服务器。工作区只保留 `local-real-timeline.php` 作为当前预览。早期原型、旧依赖和废弃资源已移至工作区 `_archive/timeline-retired-20260907/`，不属于子主题发布文件。
+时间线入口为 `category-our_story.php`，资源目录说明见 [assets/README.md](assets/README.md)，皮肤设置见 [assets/skin/README.md](assets/skin/README.md)。
