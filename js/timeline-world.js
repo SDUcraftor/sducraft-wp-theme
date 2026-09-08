@@ -314,10 +314,13 @@ export async function createWorld(app) {
             }
             return true;
         }
-        function clearDisplay(x,z,bottom,top,radius=32) {
+        function clearDisplay(x,z,bottom,top,radius=32,includeSupports=false) {
             const edges=[bottom,top].flatMap(h=>[-radius,radius].map(dx=>width/2+(x+dx-width/2)/Math.max(.65,1-h/perspectiveDistance)));
             const left=Math.min(...edges),right=Math.max(...edges),start=(z-radius)*.8-top*.6,end=(z+radius)*.8-bottom*.6;
-            return !stations.some(p=>[p.card,p.photo].filter(Boolean).some(rect=>left<rect.x+rect.width+16 && right>rect.x-16 && start<rect.y+rect.height+32 && end>rect.y-24));
+            // Photo feet sit 42px below the frame and extend another 20px in projection.
+            // Reserve the complete base and fence area when planting ground flowers.
+            const below=includeSupports?70:32;
+            return !stations.some(p=>[p.card,p.photo].filter(Boolean).some(rect=>left<rect.x+rect.width+16 && right>rect.x-16 && start<rect.y+rect.height+below && end>rect.y-24));
         }
         const caveSprites=new Map();
         function caveSprite(name,x,y,z,scale=1) {
@@ -455,10 +458,10 @@ export async function createWorld(app) {
                         caveStats.geode++;
                     }
                 }
-                // Flowers inherit their supporting terrain height and the same track clearance.
+                // Flowers inherit terrain height, but must not grow through display supports.
                 const patch=(Math.sin(col*.62+Math.sin(row*.23))+Math.cos(row*.39-col*.18)+2)/4;
                 const flowerChance=.04+.38*patch*patch;
-                if(cherryGrove && depth<.16 && r>1-flowerChance && clearTrack(x,z,height*BLOCK,height*BLOCK+12)) {
+                if(cherryGrove && depth<.16 && r>1-flowerChance && clearTrack(x,z,height*BLOCK,height*BLOCK+12) && clearDisplay(x,z,height*BLOCK,height*BLOCK+12,32,true)) {
                     const chunk=Math.floor(row/12);
                     if(!flowers.has(chunk))flowers.set(chunk,[]);
                     const density=hash(col+19,row-7),amount=density<.45?1:density<.8?2:density<.96?3:4;
@@ -579,7 +582,7 @@ export async function createWorld(app) {
         box(cart,0,12,0,35,24,42,material('stone','#b4b9b0'));
     }
     const branchCart=cart.clone(true);scene.add(branchCart);
-    // Clone materials: fading the incoming cart must never fade the main cart.
+    // Keep each cart's materials independent, including its rider's skin.
     branchCart.traverse(mesh=>{if(mesh.isMesh) {
         const clone=mat=>own(mat.clone());
         mesh.material=Array.isArray(mesh.material)?mesh.material.map(clone):clone(mesh.material);
@@ -768,22 +771,22 @@ export async function createWorld(app) {
         cart.position.copy(position);cart.position.y+=1;
         updateRider(active,y);
         const separation=branchCurve?Math.max(0,Math.min(1,(y-mergeY)/80)):0;
-        const blend=separation*separation*(3-2*separation);
+        const branchOpacity=separation*separation*(3-2*separation);
         branchCart.visible=Boolean(branchCurve)&&separation>0;
         if(branchCurve) {
             const branchY=Math.max(mergeY,Math.min(branchEndY-95,y));
             const branch=onBranch(branchCurve,branchY);
             branchCart.position.copy(branch.position);branchCart.position.y+=1;
-            // Both carts approach the same position and heading before the second disappears.
-            branchCart.position.lerp(cart.position,1-blend);
+            // Fade on the actual branch, without pulling the cart across the rails.
             setCartHeading(branchCart.quaternion,branch.tangent);
-            const sharedHeading=setCartHeading(new THREE.Quaternion(),tangent);
-            branchCart.quaternion.slerp(sharedHeading,1-blend);
             branchCart.traverse(mesh=>{if(mesh.isMesh) {
+                // Rails are transparent too. Draw the fading cart after them, retaining
+                // depth testing/writes so a nearer rail cannot paint over its body.
+                mesh.renderOrder=1;
                 for(const mat of Array.isArray(mesh.material)?mesh.material:[mesh.material]) {
-                    const transparent=blend<1;
-                    if(mat.transparent!==transparent) {mat.transparent=transparent;mat.needsUpdate=true;}
-                    mat.opacity=blend;mat.depthWrite=!transparent;
+                    const transparent=branchOpacity<1;
+                    if(mat.transparent!==transparent){mat.transparent=transparent;mat.needsUpdate=true;}
+                    mat.opacity=branchOpacity;mat.depthTest=true;mat.depthWrite=true;
                 }
             }});
             app.dataset.branchCartY=branchY.toFixed(1);
