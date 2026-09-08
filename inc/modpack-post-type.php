@@ -491,7 +491,7 @@ function sducraft_get_download_size($download) {
     }
 
     $path = get_attached_file($attachment_id);
-    return $path && is_file($path) ? size_format(filesize($path)) : '';
+    return $path && is_file($path) ? size_format(filesize($path), 2) : '';
 }
 
 function sducraft_get_download_platform_label($download) {

@@ -1,4 +1,4 @@
-// The rail, terrain, minecart and torches use the same orthographic camera.
+// Longitudinal orthographic scrolling with transverse perspective for inward-facing sides.
 // Chest thumbnails share a second renderer; the number of WebGL contexts is constant.
 export async function createWorld(app) {
     const assets = window.sducraftTimelineAssets;
@@ -18,9 +18,32 @@ export async function createWorld(app) {
     renderer.shadowMap.enabled=!lowPower; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     const sun = new THREE.DirectionalLight(0xffeed0,2.5); sun.position.set(-300,600,100); scene.add(sun); scene.add(sun.target); sun.castShadow=true; sun.shadow.mapSize.set(innerWidth<900?1024:2048,innerWidth<900?1024:2048); sun.shadow.normalBias=1.2; sun.shadow.bias=-.0002;
     const textures = {}, owned = new Set();
-    const own = resource => {owned.add(resource); return resource;};
+    const transverseDepth={value:0};
+    const own = resource => {
+        owned.add(resource);
+        if(resource.isMaterial) {
+            resource.onBeforeCompile=shader=>{
+                shader.uniforms.transverseDepth=transverseDepth;
+                shader.vertexShader='uniform float transverseDepth;\n'+shader.vertexShader;
+                shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>',`#include <project_vertex>
+                    vec4 terrainPosition=vec4(transformed,1.0);
+                    #ifdef USE_INSTANCING
+                        terrainPosition=instanceMatrix*terrainPosition;
+                    #endif
+                    terrainPosition=modelMatrix*terrainPosition;
+                    gl_Position.x/=max(0.65,1.0-terrainPosition.y*transverseDepth);
+                `);
+            };
+            resource.customProgramCacheKey=()=> 'timeline-transverse-v1';
+        }
+        return resource;
+    };
     const names = ['rail','powered_rail_on','stone','moss_block','iron_ore','coal_ore','copper_ore','oak_log','oak_log_top','oak_planks','torch','crafting_table_top','crafting_table_side','crafting_table_front','oak_leaves','grass_block_top','grass_block_side','dirt','deepslate','deepslate_top','deepslate_diamond_ore','netherrack','blackstone','magma','lava_still','bedrock'];
     const loader = new THREE.TextureLoader();
+    names.push('cherry_log','cherry_log_top','cherry_leaves','cherry_planks','pink_petals');
+    names.push('dripstone_block','pointed_dripstone_up_base','pointed_dripstone_up_tip','amethyst_block','amethyst_cluster','calcite','smooth_basalt','flowering_azalea_leaves','cave_vines_lit','cave_vines_plant_lit','water_still');
+    names.push('../particle/cherry_0','../particle/cherry_5','../particle/cherry_9');
+    names.push('pointed_dripstone_up_middle','pointed_dripstone_up_frustum','sculk','sculk_sensor_bottom','sculk_sensor_side','sculk_sensor_top','sculk_sensor_tendril_inactive','sculk_catalyst_bottom','sculk_catalyst_side','sculk_catalyst_top','deepslate_bricks','cracked_deepslate_bricks');
     const models = new GLTFLoader();
     let chestAsset = null, cartAsset = null;
     try {
@@ -31,6 +54,8 @@ export async function createWorld(app) {
             // Animated Minecraft textures are vertical strips: show one square frame.
             if(texture.image.height>texture.image.width) texture.repeat.y=texture.image.width/texture.image.height;
         }));
+        textures.cherry_leaves.userData.cutout=true;
+        textures.flowering_azalea_leaves.userData.cutout=true;
         [cartAsset, chestAsset] = await Promise.all([
             models.loadAsync(app.dataset.minecartModel).catch(() => null),
             models.loadAsync(app.dataset.chestModel).catch(() => null),
@@ -45,7 +70,7 @@ export async function createWorld(app) {
     const flatMaterials = {};
     function material(name, color = '#606a5d') {
         const key = name + color;
-        return flatMaterials[key] ||= own(new THREE.MeshLambertMaterial({map:textures[name],color,emissive:name==='lava_still'?0xff6b12:name==='magma'?0x9b2d05:0,emissiveMap:['lava_still','magma'].includes(name)?textures[name]:null,emissiveIntensity:.65}));
+        return flatMaterials[key] ||= own(new THREE.MeshLambertMaterial({map:textures[name],color,alphaTest:textures[name]?.userData.cutout ? .5:0,emissive:name==='lava_still'?0xff6b12:name==='magma'?0x9b2d05:0,emissiveMap:['lava_still','magma'].includes(name)?textures[name]:null,emissiveIntensity:.65}));
     }
     const wood = material('oak_log','#9f8c68');
     const planks = material('oak_planks','#75694e');
@@ -57,6 +82,7 @@ export async function createWorld(app) {
     let worldGroup = new THREE.Group(); scene.add(worldGroup);
     let points = [], curve, routeLength = 0, samples = [], torches = [], positions = [], lastWidth = 0, lastHeight = 0;
     let disposed = false, branchCurve=null, mergeY=Infinity, branchEndY=0;
+    let cherryTrees=[];
     function onBranch(path,y) {
         let lo=0,hi=1;for(let i=0;i<24;i++) {const mid=(lo+hi)/2,p=path.getPoint(mid);if(p.z*.8-p.y*.6<y)lo=mid;else hi=mid;}
         return {position:path.getPoint((lo+hi)/2),tangent:path.getTangent((lo+hi)/2).normalize()};
@@ -64,8 +90,72 @@ export async function createWorld(app) {
     const temporaryGeometry = new Set();
     const dummy = new THREE.Object3D();
     const BLOCK = 64;
+    // Vanilla flower_amount adds one quadrant at a time, rather than a full atlas tile.
+    const petalGeometries=[[0,0,2.99],[0,1,1],[1,1,2],[1,0,2]].map(([x,z,h])=>{
+        const geometry=own(new THREE.PlaneGeometry(BLOCK/2,BLOCK/2)),uv=geometry.attributes.uv;
+        for(let i=0;i<uv.count;i++)uv.setXY(i,(x+uv.getX(i))/2,(1-z+uv.getY(i))/2);
+        geometry.rotateX(-Math.PI/2);geometry.translate((x-.5)*BLOCK/2,h*4,(z-.5)*BLOCK/2);return geometry;
+    });
+    const petalMaterial=own(new THREE.MeshLambertMaterial({map:textures.pink_petals,alphaTest:.5,side:THREE.DoubleSide}));
+    // Crossed, cutout planes preserve the vanilla silhouettes of vines and crystals.
+    const caveCross=own(new THREE.BufferGeometry());
+    {
+        const vertices=[],uvs=[],indices=[];
+        for(const angle of [Math.PI/4,-Math.PI/4]) {
+            const x=Math.cos(angle)*32,z=Math.sin(angle)*32,n=vertices.length/3;
+            vertices.push(-x,0,-z,x,0,z,-x,64,-z,x,64,z);
+            uvs.push(0,0,1,0,0,1,1,1);indices.push(n,n+1,n+2,n+1,n+3,n+2);
+        }
+        caveCross.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+        caveCross.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+        caveCross.setIndex(indices);caveCross.computeVertexNormals();
+    }
+    const sensorTendril=own(caveCross.clone());
+    for(let i=0;i<sensorTendril.attributes.uv.count;i++) {
+        const uv=sensorTendril.attributes.uv;uv.setXY(i,.25+uv.getX(i)*.5,uv.getY(i)*.5);
+    }
+    const sensorBody=own(new THREE.BoxGeometry(64,32,64));
+    for(const face of [0,1,4,5])for(let i=0;i<4;i++) {
+        const uv=sensorBody.attributes.uv,n=face*4+i;uv.setY(n,uv.getY(n)*.5);
+    }
+    const caveMaterials={};
+    function caveMaterial(name) {
+        return caveMaterials[name] ||= own(new THREE.MeshLambertMaterial({map:textures[name],side:THREE.DoubleSide,alphaTest:.5,
+            emissive:name.includes('vines')?0x8f7130:name==='amethyst_cluster'?0x75519b:0,
+            emissiveMap:textures[name],emissiveIntensity:.3}));
+    }
+    // Vanilla fence_post: a 4×16×4 post using the central strip of oak planks.
+    const fenceGeometry=own(new THREE.BoxGeometry(16,64,16));
+    for(let face=0;face<6;face++) {
+        const uv=fenceGeometry.attributes.uv,cap=face===2||face===3;
+        for(let i=0;i<4;i++) {const n=face*4+i;uv.setXY(n,(6+uv.getX(n)*4)/16,cap?(6+uv.getY(n)*4)/16:uv.getY(n));}
+    }
+    function fencePost(group,x,y,z) {
+        const mesh=new THREE.Mesh(fenceGeometry,material('oak_planks','#ffffff'));
+        mesh.position.set(x,y+32,z);mesh.castShadow=mesh.receiveShadow=true;group.add(mesh);
+    }
+    // Vanilla fence_side: two 2×3×9 rails, meeting the adjacent post halfway.
+    const fenceArms=[{height:54,v:1},{height:30,v:7}].map(({height,v})=>{
+        const geometry=own(new THREE.BoxGeometry(8,12,36)),uv=geometry.attributes.uv;
+        for(let face=0;face<6;face++) {
+            const rect=face<2?[0,v,9,v+3]:face<4?[7,0,9,9]:[7,v,9,v+3];
+            for(let i=0;i<4;i++){const n=face*4+i,u=uv.getX(n),w=uv.getY(n);uv.setXY(n,(rect[0]+u*(rect[2]-rect[0]))/16,1-(rect[3]-w*(rect[3]-rect[1]))/16);}
+        }
+        geometry.translate(0,height,-14);return geometry;
+    });
+    function fenceArm(group,x,y,z,angle) {
+        for(const geometry of fenceArms) {
+            const mesh=new THREE.Mesh(geometry,material('oak_planks','#ffffff'));
+            mesh.position.set(x,y,z);mesh.rotation.y=angle;mesh.castShadow=mesh.receiveShadow=true;group.add(mesh);
+        }
+    }
     const hash = (x,z) => {const n = Math.sin(x * 127.1 + z * 311.7) * 43758.5453; return n - Math.floor(n);};
     const toWorld = (x,y,h = 0) => new THREE.Vector3(x,h,(y + .6*h)/.8);
+    let routeElevation=()=>0;
+    function surfaceWorld(x,y,offset=0) {
+        const height=routeElevation(y)+offset,width=app.clientWidth,distance=Math.max(1400,width*1.25);
+        return toWorld(width/2+(x-width/2)*(1-height/distance),y,height);
+    }
     function box(group,x,y,z,w,h,d,mat) {
         let geometry=cube;
         if(mat===wood || mat===planks) {
@@ -82,12 +172,13 @@ export async function createWorld(app) {
     function makeRibbon(width, elevation, mat, from = 0, to = routeLength, path = curve, length = routeLength) {
         const verts=[],uvs=[],indices=[]; let count=0;
         const steps = Math.max(1,Math.ceil((to-from)/12));
-        for(let i=0;i<=steps;i++) {
-            const distance=from+(to-from)*i/steps,t=Math.max(0,Math.min(1,distance/length)),p=path.getPointAt(t),tangent=path.getTangentAt(t);
+        const distances=[...new Set([...Array.from({length:steps+1},(_,i)=>from+(to-from)*i/steps),...(path.railBreaks||[]).filter(d=>d>from&&d<to)])].sort((a,b)=>a-b);
+        for(let i=0;i<distances.length;i++) {
+            const distance=distances[i],t=Math.max(0,Math.min(1,distance/length)),p=path.getPointAt(t),tangent=path.getTangentAt(t);
             const normal = new THREE.Vector3(tangent.z,0,-tangent.x).normalize().multiplyScalar(width/2);
             for(const sign of [-1,1]) verts.push(p.x+normal.x*sign,p.y+elevation,p.z+normal.z*sign);
             uvs.push(0,distance/40,1,distance/40);
-            if(i<steps) {const n=count*2;indices.push(n,n+1,n+2,n+1,n+3,n+2);} count++;
+            if(i<distances.length-1) {const n=count*2;indices.push(n,n+1,n+2,n+1,n+3,n+2);} count++;
         }
         const geometry = new THREE.BufferGeometry();temporaryGeometry.add(geometry);
         geometry.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geometry.setIndex(indices);geometry.computeVertexNormals();
@@ -100,9 +191,8 @@ export async function createWorld(app) {
         return Math.max(0,Math.min(1,a.t+(b.t-a.t)*Math.max(0,Math.min(1,(y-a.y)/(b.y-a.y||1)))));
     }
     function makeTorch(x,screenY,soul) {
-        const group = new THREE.Group();group.position.copy(toWorld(x,screenY));worldGroup.add(group);
-        box(group,0,17,0,9,45,9,wood);
-        box(group,0,39,0,18,5,16,planks);
+        const group = new THREE.Group();group.position.copy(surfaceWorld(x,screenY));worldGroup.add(group);
+        fencePost(group,0,-24,0);
         // UVs from Minecraft's template_torch.json: [7,6,9,16] sides.
         const geo = new THREE.BoxGeometry(7,35,7);temporaryGeometry.add(geo);
         const uv=geo.attributes.uv;
@@ -128,8 +218,8 @@ export async function createWorld(app) {
         if(width===lastWidth && totalHeight===lastHeight && worldGroup.userData.layoutKey===key) return;
         lastWidth=width;lastHeight=totalHeight;
         scene.remove(worldGroup);worldGroup.traverse(mesh=>{if(mesh.isInstancedMesh)mesh.dispose();});temporaryGeometry.forEach(g=>g.dispose());temporaryGeometry.clear();
-        worldGroup = new THREE.Group();worldGroup.userData.layoutKey=key;scene.add(worldGroup);torches=[];
-        points=[toWorld(width*(mobile?.86:.8),90,1),toWorld(width*(mobile?.9:.76),mobile?430:420,1)];
+        worldGroup = new THREE.Group();worldGroup.userData.layoutKey=key;scene.add(worldGroup);torches=[];cherryTrees=[];
+        points=[toWorld(width*(mobile?.7:.8),90,1),toWorld(width*(mobile?.7:.76),mobile?430:420,1)];
         const merge=stations.find(p=>p.origin==='merge'),vanilla=stations.find(p=>p.origin==='vanilla');
         branchCurve=null;mergeY=merge&&vanilla?merge.y:Infinity;
         const leftX=mobile?23:width/2-96,rightX=mobile?67:width/2+96;
@@ -143,9 +233,44 @@ export async function createWorld(app) {
             branchEndY=vanilla.y+95;
             branchCurve=new THREE.CatmullRomCurve3([junction.clone(),toWorld(rightX,merge.y+155,1),toWorld(rightX,vanilla.y,1),toWorld(rightX,branchEndY,1)],false,'centripetal');
         }
-        curve = new THREE.CatmullRomCurve3(points,false,'centripetal');curve.arcLengthDivisions=Math.max(400,stations.length*50);curve.updateArcLengths();routeLength=curve.getLength();
+        const planar=new THREE.CatmullRomCurve3(points,false,'centripetal');
+        const eligible=stations.slice(0,-1).map((p,i)=>({p,next:stations[i+1],i})).filter(({p,next})=>!p.origin&&!next.origin);
+        const ramps=[];let currentHeight=0;
+        const count=Math.min(6,Math.floor(eligible.length/3));
+        const chosen=new Map();
+        for(let i=0;i<count;i++) {
+            chosen.set(Math.round((i+1)/(count+1)*eligible.length*.48),-1);
+            chosen.set(Math.round(eligible.length*(.6+.36*(i+1)/(count+1))),1);
+        }
+        eligible.forEach(({p,next},i)=>{
+            if(!chosen.has(i))return;
+            const direction=chosen.get(i),from=currentHeight,to=from+direction*BLOCK;
+            const center=(p.card.y+p.card.height+next.card.y)/2;
+            const duration=direction<0?BLOCK*1.4:BLOCK*.2;
+            const z=Math.round(((center-duration/2+.6*(from+1))/.8+32)/BLOCK)*BLOCK-32;
+            const start=z*.8-.6*(from+1),end=(z+BLOCK)*.8-.6*(to+1);
+            ramps.push({start,end,from,to,z,boundaryZ:direction<0?z:z+BLOCK});currentHeight=to;
+        });
+        routeElevation=y=>{
+            let height=0;
+            for(const r of ramps){if(y<r.start)break;if(y<r.end)return r.from+(r.to-r.from)*(y-r.start)/(r.end-r.start);height=r.to;}
+            return height;
+        };
+        function pointAtScreen(y) {
+            let lo=0,hi=1;for(let i=0;i<26;i++){const mid=(lo+hi)/2,p=planar.getPoint(mid);if(p.z*.8-p.y*.6<y)lo=mid;else hi=mid;}
+            const p=planar.getPoint((lo+hi)/2);
+            return surfaceWorld(p.x,y,1);
+        }
+        const firstY=points[0].z*.8-.6,lastY=points.at(-1).z*.8-.6;
+        const screenSteps=[...new Set([...Array.from({length:Math.ceil((lastY-firstY)/8)+1},(_,i)=>Math.min(lastY,firstY+i*8)),lastY,...ramps.flatMap(r=>[r.start,r.end])])].sort((a,b)=>a-b);
+        curve=new THREE.CurvePath();
+        for(let i=1;i<screenSteps.length;i++)curve.add(new THREE.LineCurve3(pointAtScreen(screenSteps[i-1]),pointAtScreen(screenSteps[i])));
+        // CurvePath.getPoint already uses distance; preserve exact ramp corners.
+        curve.getPointAt=curve.getPoint.bind(curve);
+        curve.railBreaks=curve.getCurveLengths();routeLength=curve.getLength();
+        app.dataset.railRamps=JSON.stringify(ramps);
         const sampleCount=Math.ceil(routeLength/8)+1;
-        samples=Array.from({length:sampleCount},(_,i)=>{const t=i/(sampleCount-1),p=curve.getPointAt(t);return {t,y:p.z*.8-p.y*.6};});
+        samples=Array.from({length:sampleCount},(_,i)=>{const t=i/(sampleCount-1),p=curve.getPointAt(t);return {t,x:width/2+(p.x-width/2)/(1-p.y/Math.max(1400,width*1.25)),y:p.z*.8-p.y*.6};});
         makeRibbon(mobile?48:68,-.4,bedMaterial);makeRibbon(mobile?30:40,0,routeMaterial);
         if(branchCurve) {const length=branchCurve.getLength();makeRibbon(mobile?40:60,-.4,bedMaterial,0,length,branchCurve,length);makeRibbon(mobile?26:40,0,routeMaterial,0,length,branchCurve,length);}
         stations.filter(p=>p.origin!=='vanilla'||!branchCurve).forEach(p=>{const s=parameterAt(p.y)*routeLength;makeRibbon(mobile?30:40,.18,poweredMaterial,Math.max(0,s-22),Math.min(routeLength,s+22));});
@@ -156,46 +281,200 @@ export async function createWorld(app) {
             // InstancedMesh keeps every block on the GPU even when only one screen is visible.
             const key=type+color+':'+Math.floor(z/(BLOCK*12));
             if(!batches.has(key)) {
-                const side=material(type==='grass_block_top'?'grass_block_side':type,color);
-                const top=material(type==='deepslate'?'deepslate_top':type,type==='grass_block_top'?'#76a944':color);
-                batches.set(key,{mat:[side,side,top,side,side,side],blocks:[]});
+                const side=material(type==='sculk_catalyst'?'sculk_catalyst_side':type==='grass_block_top'?'grass_block_side':type,color);
+                const top=material(type==='sculk_catalyst'?'sculk_catalyst_top':type==='deepslate'?'deepslate_top':type.endsWith('_log')?type+'_top':type,type==='grass_block_top'?'#76a944':color);
+                const bottom=type==='sculk_catalyst'?material('sculk_catalyst_bottom',color):side;
+                batches.set(key,{mat:[side,side,top,bottom,side,side],blocks:[]});
             }
             batches.get(key).blocks.push({x,y,z});
         }
-        const bridges=stations.slice(0,-1).flatMap((p,i)=>i%7===4 && !p.origin && stations[i+1].card.y-p.card.y-p.card.height>100 ? [(p.card.y+p.card.height+stations[i+1].card.y)/2] : []);
         const rows=Math.ceil(totalHeight/(BLOCK*.8))+5;
-        const columns=Math.ceil(width/BLOCK)+2;
+        const entranceY=350,entrance=curve.getPointAt(parameterAt(entranceY));
+        const flowers=new Map();
+        const perspectiveDistance=Math.max(1400,width*1.25);
+        function railX(y) {
+            let lo=0,hi=samples.length-1;
+            while(hi-lo>1){const mid=(lo+hi)>>1;if(samples[mid].y<y)lo=mid;else hi=mid;}
+            const a=samples[lo],b=samples[hi],f=Math.max(0,Math.min(1,(y-a.y)/(b.y-a.y||1)));
+            return a.x+(b.x-a.x)*f;
+        }
+        function clearTrack(x,z,bottom,top) {
+            const project=(v,h)=>width/2+(v-width/2)/Math.max(.65,1-h/perspectiveDistance);
+            const edges=[project(x-32,bottom),project(x+32,bottom),project(x-32,top),project(x+32,top)];
+            const left=Math.min(...edges)-46,right=Math.max(...edges)+46;
+            // Include the physical footprint and the full projected volume, plus rider height.
+            const start=z*.8-32-top*.6,end=z*.8+64-bottom*.6;
+            for(let y=start;y<=end;y+=16) {
+                const main=railX(y);
+                if(main>left && main<right)return false;
+                if(branchCurve && y>=mergeY && y<=branchEndY) {
+                    const other=onBranch(branchCurve,y).position.x;
+                    if(other>left && other<right)return false;
+                }
+            }
+            return true;
+        }
+        function clearDisplay(x,z,bottom,top,radius=32) {
+            const edges=[bottom,top].flatMap(h=>[-radius,radius].map(dx=>width/2+(x+dx-width/2)/Math.max(.65,1-h/perspectiveDistance)));
+            const left=Math.min(...edges),right=Math.max(...edges),start=(z-radius)*.8-top*.6,end=(z+radius)*.8-bottom*.6;
+            return !stations.some(p=>[p.card,p.photo].filter(Boolean).some(rect=>left<rect.x+rect.width+16 && right>rect.x-16 && start<rect.y+rect.height+32 && end>rect.y-24));
+        }
+        const caveSprites=new Map();
+        function caveSprite(name,x,y,z,scale=1) {
+            const key=name+':'+Math.floor(z/(BLOCK*12));
+            if(!caveSprites.has(key))caveSprites.set(key,{name,items:[]});
+            caveSprites.get(key).items.push({x,y,z,scale});
+        }
+        // A handful of broad pockets, separated by ordinary rock. Centers follow gaps
+        // between displays, so each pocket has an unobstructed view on narrow screens too.
+        const markedGaps=eligible.filter(({p})=>p.scenery);
+        const caveRegions=[['lush',.28,620],['deepdark',.43,580],['geode',.54,180],['lush',.65,500],['dripstone',.76,520]].map(([kind,fraction,radius],index)=>{
+            const gaps=eligible.map(({p,next})=>(Math.max(p.card.y+p.card.height,p.photo?p.photo.y+p.photo.height:0)+next.card.y)/2);
+            const marked=markedGaps[index];
+            const center=marked?(Math.max(marked.p.card.y+marked.p.card.height,marked.p.photo?marked.p.photo.y+marked.p.photo.height:0)+marked.next.card.y)/2:gaps.reduce((best,y)=>Math.abs(y-totalHeight*fraction)<Math.abs(best-totalHeight*fraction)?y:best,gaps[0]||totalHeight*fraction);
+            const anchor=surfaceWorld(width*(mobile?.64:.76),center);
+            return {kind:marked?.p.scenery||kind,center,radius,x:Math.round((anchor.x-32)/BLOCK)*BLOCK+32,z:Math.round(anchor.z/BLOCK)*BLOCK};
+        });
+        const caveStats={lush:0,dripstone:0,deepdark:0,geode:0,raised:0,lowered:0};
+        const dripstoneHeights=[];
+        for(const region of caveRegions.filter(p=>p.kind==='geode')) {
+            let best=-1,anchor={x:region.x,z:region.z};
+            for(let x=32;x<width;x+=BLOCK)for(let dz=-3;dz<=3;dz++) {
+                const z=region.z+dz*BLOCK;
+                let ground=0;for(const ramp of ramps){if(z<ramp.boundaryZ)break;ground=ramp.to;}
+                let score=0;
+                for(let dx=-2;dx<=2;dx++)for(let dr=-2;dr<=2;dr++) {
+                    if(Math.hypot(dx,dr)>2.6)continue;
+                    const px=x+dx*BLOCK,pz=z+dr*BLOCK;
+                    if(px>0 && px<width && clearTrack(px,pz,ground,ground+BLOCK*2) && clearDisplay(px,pz,ground,ground+BLOCK*2))score++;
+                }
+                if(score>best){best=score;anchor={x,z};}
+            }
+            Object.assign(region,anchor);
+            region.center=region.z*.8-routeElevation(region.center)*.6;
+            region.radius=240;
+        }
+        const columns=Math.ceil(width*1.35/BLOCK)+2;
         // Geological transitions follow world distance, independently of the year markers.
         for(let row=-3;row<rows;row++) {
-            for(let col=-1;col<columns;col++) {
+            for(let col=-Math.ceil(width*.35/BLOCK);col<columns;col++) {
                 const x=col*BLOCK+BLOCK/2,z=row*BLOCK,r=hash(col,row);
-                const pageY=z*.8;
-                const depth=pageY/totalHeight+(hash(col,Math.floor(row/4))-.5)*.085;
-                const originGarden=pageY>mergeY+180;
-                const type=originGarden?(r>.9?'moss_block':'grass_block_top'):depth<.16?'grass_block_top':depth<.22?'dirt':depth<.49?(r>.96?'iron_ore':r>.91?'coal_ore':'stone'):depth<.76?(r>.97?'deepslate_diamond_ore':'deepslate'):depth<.87?(r>.84?'magma':'blackstone'):'netherrack';
-                const routePoint=curve.getPointAt(parameterAt(z*.8));
-                const besideRoute=Math.abs(x-routePoint.x)>BLOCK*1.8;
+                let baseHeight=0;
+                for(const ramp of ramps){if(z<ramp.boundaryZ)break;baseHeight=ramp.to/BLOCK;}
+                const pageY=z*.8-baseHeight*BLOCK*.6;
+                // The mine returns to daylight before the founding clearing.
+                // Blend geology by distance so the workbench is not adjacent to a Nether biome.
+                const returnDepth=Number.isFinite(mergeY)?Math.max(0,(mergeY+180-pageY)/(BLOCK*24)):1;
+                const depth=(count ? -baseHeight/count*.65 : Math.min(pageY/totalHeight,returnDepth))+(hash(col,Math.floor(row/4))-.5)*.085;
+                const originGarden=returnDepth<.16;
+                const cherryGrove=pageY<totalHeight*.16 && !originGarden;
+                let type=depth<.16?(r>.9?'moss_block':'grass_block_top'):depth<.22?'dirt':depth<.49?(r>.96?'iron_ore':r>.91?'coal_ore':'stone'):(r>.97?'deepslate_diamond_ore':'deepslate');
                 const awayFromStation=!stations.some(p=>pageY>p.card.y-90 && pageY<p.card.y+p.card.height+100 || p.photo && pageY>p.photo.y-90 && pageY<p.photo.y+p.photo.height+110);
-                const basin=Math.sin(row*.22)+Math.cos(col*.74+row*.08);
-                const ravine=bridges.some(y=>Math.abs(pageY-y)<45);
-                const pool=!originGarden && depth>.73 && besideRoute && awayFromStation && basin>1.25;
-                // Recesses retain full cube walls; the liquid surface is below the track bed.
-                const recess=!originGarden && (ravine || pool || (depth>.24 && besideRoute && awayFromStation && basin>1));
-                block(x,recess?-BLOCK*1.5:-BLOCK/2,z,type);
-                if(recess && (pool||ravine))block(x,-BLOCK*2.5,z,type);
-                if(!originGarden && awayFromStation && besideRoute && basin>.65 && basin<=1 && depth>.24)block(x,BLOCK/2,z,type);
+                const relief=Math.sin(col*.53+Math.sin(row*.075))*.8+Math.cos(row*.17-col*.24)*.65;
+                // Broad, connected terraces reach into the scene; track and display
+                // footprints stay at the original elevation, including their supports.
+                let localHeight=originGarden?Math.max(0,Math.round(relief*.5)):Math.max(-1,Math.min(2,Math.round(relief)));
+                const region=depth>.22&&!originGarden?caveRegions.find(p=>Math.abs(pageY-p.center)<p.radius*(.82+.18*Math.sin(col*.7+row*.11))):null;
+                if(region?.kind==='lush')type=r>.88?'dirt':'moss_block';
+                if(region?.kind==='dripstone' && r>.18)type='dripstone_block';
+                if(region?.kind==='deepdark') {
+                    const cover=1-Math.abs(pageY-region.center)/region.radius;
+                    type=hash(col+11,Math.floor(row/2))<.35+cover*.6?'sculk':'deepslate';
+                }
+                const scenicPool=region?.kind!=='deepdark' && !originGarden && depth>.55 && awayFromStation && Math.sin(row*.027+col*.21)>.98 && Math.cos(col*.38-row*.016)>.94;
+                const lushPool=region?.kind==='lush' && relief<-.75 && Math.cos(row*.35+col*.3)>.35;
+                if(scenicPool||lushPool)localHeight=-1;
+                if(region?.kind==='geode' && Math.hypot((x-region.x)/BLOCK,(z-region.z)/BLOCK)<2.6)localHeight=0;
+                let height=baseHeight+localHeight;
+                // One contiguous height field serves every biome; tracks have a reserved corridor.
+                if(!clearTrack(x,z,(baseHeight-1)*BLOCK,height*BLOCK))height=baseHeight;
+                if(!clearDisplay(x,z,(baseHeight-1)*BLOCK,(Math.max(baseHeight,height)+1)*BLOCK))height=baseHeight;
+                if(Math.abs(pageY-entranceY)<180 && Math.abs(x-entrance.x)<200)height=0;
+                const pool=height<baseHeight && (scenicPool||lushPool);
+                if(height>baseHeight)caveStats.raised++;
+                if(height<baseHeight)caveStats.lowered++;
+                for(let layer=baseHeight-2;layer<height;layer++) {
+                    const surface=layer===height-1;
+                    const cellType=!surface && type==='sculk'?'deepslate':!surface && (type==='grass_block_top'||type==='moss_block')?'dirt':type;
+                    block(x,(layer+.5)*BLOCK,z,cellType);
+                }
                 if(pool) {
-                    const liquid=box(worldGroup,x,-38,z,BLOCK,1,BLOCK,material('lava_still','#ffffff'));
+                    const liquid=box(worldGroup,x,height*BLOCK+8,z,BLOCK,1,BLOCK,material(lushPool?'water_still':'lava_still',lushPool?'#4c9dba':'#ffffff'));
                     liquid.castShadow=false;
                 }
-                const edge=mobile?18:Math.max(80,(width-1120)/2)+(awayFromStation?64*(1+Math.sin(row*.16)):0);
-                if(x<edge || x>width-edge) {
-                    const tiers=originGarden?1:1+Math.floor(hash(col,Math.floor(row/5))*3);
-                    for(let tier=0;tier<tiers;tier++) block(x,BLOCK/2+tier*BLOCK,z,type==='grass_block_top'&&tier<tiers-1?'dirt':type);
-                    if((depth<.15||originGarden) && row%17===0 && (col===0 || col===columns-3)) {
-                        for(let h=0;h<3;h++) block(x,(tiers+h+.5)*BLOCK,z,'oak_log','#a0a09a');
-                        for(let dx=-1;dx<=1;dx++) for(let dz=-1;dz<=1;dz++) block(x+dx*BLOCK,(tiers+3.5)*BLOCK,z+dz*BLOCK,'oak_leaves','#628b3a');
-                        block(x,(tiers+4.5)*BLOCK,z,'oak_leaves','#73994b');
+                const scenicTop=height+(region?.kind==='dripstone'?1:region?.kind==='deepdark'?2:mobile?2:4);
+                const scenicClear=!pool && x>0 && x<width && clearTrack(x,z,height*BLOCK,scenicTop*BLOCK) && clearDisplay(x,z,height*BLOCK,scenicTop*BLOCK,42);
+                if(region && scenicClear && row%(mobile?2:3)===0 && hash(col+3,row)>(mobile?.25:.48)) {
+                    if(region.kind==='lush') {
+                        // Mossy rock shelves support hanging vines; bushes stay near the floor.
+                        block(x,(height+.5)*BLOCK,z,'moss_block','#9cb777');
+                        block(x,(height+1.5)*BLOCK,z,'flowering_azalea_leaves','#d4dfa6');
+                        if(mobile) {
+                            caveSprite('cave_vines_lit',x,height*BLOCK,z+33);
+                        } else if(hash(col,row+7)>.45) {
+                            // A solid column behind the greenery holds the overhanging lip.
+                            for(let tier=2;tier<4;tier++)block(x,(height+tier+.5)*BLOCK,z,'moss_block','#9cb777');
+                            caveSprite('cave_vines_plant_lit',x,height*BLOCK+128,z+33);
+                            caveSprite('cave_vines_lit',x,height*BLOCK+64,z+33);
+                        }
+                        caveStats.lush++;
+                    } else if(region.kind==='dripstone') {
+                        let segments=1+Math.floor(hash(col+29,row-13)*(mobile?3:4));
+                        while(segments>1 && (!clearTrack(x,z,height*BLOCK,(height+segments)*BLOCK) || !clearDisplay(x,z,height*BLOCK,(height+segments)*BLOCK,42)))segments--;
+                        // Vanilla thickness progression: broad base/middle, taper, then tip.
+                        for(let segment=0;segment<segments;segment++) {
+                            const thickness=segment===segments-1?'tip':segment===segments-2?'frustum':segment===0?'base':'middle';
+                            caveSprite('pointed_dripstone_up_'+thickness,x,(height+segment)*BLOCK,z);
+                        }
+                        dripstoneHeights.push(segments);
+                        caveStats.dripstone++;
+                    } else if(region.kind==='deepdark') {
+                        const feature=hash(col-17,row+5);
+                        if(feature<.45) {
+                            // Vanilla sensor: half-block body and four eight-pixel tendrils.
+                            const side=material('sculk_sensor_side','#b8d4ce');
+                            const sensor=new THREE.Mesh(sensorBody,[side,side,material('sculk_sensor_top','#b8d4ce'),material('sculk_sensor_bottom','#b8d4ce'),side,side]);
+                            sensor.position.set(x,height*BLOCK+16,z);sensor.castShadow=sensor.receiveShadow=true;worldGroup.add(sensor);
+                            for(const dx of [-20,20])for(const dz of [-20,20])caveSprite('sculk_sensor_tendril_inactive',x+dx,height*BLOCK+32,z+dz,.5);
+                        } else if(feature<.7)block(x,(height+.5)*BLOCK,z,'sculk_catalyst','#d0dcd6');
+                        else {
+                            const tiers=mobile?1:hash(col,row+4)>.6?2:1;
+                            for(let tier=0;tier<tiers;tier++)block(x,(height+tier+.5)*BLOCK,z,tier?'cracked_deepslate_bricks':'deepslate_bricks','#819695');
+                        }
+                        caveStats.deepdark++;
+                    }
+                }
+                if(region?.kind==='geode' && x>0 && x<width && clearTrack(x,z,height*BLOCK,(height+2)*BLOCK) && clearDisplay(x,z,height*BLOCK,(height+2)*BLOCK)) {
+                    // Open, stepped geode: basalt shell, pale calcite rim, purple interior.
+                    const distance=Math.hypot((x-region.x)/BLOCK,(z-region.z)/BLOCK);
+                    if(distance<2.6) {
+                        const shell=distance>1.8, rim=distance>1.1;
+                        block(x,(height+.5)*BLOCK,z,shell?'smooth_basalt':rim?'calcite':'amethyst_block',shell?'#aaaaaa':'#eee4ff');
+                        if(shell && z<region.z)block(x,(height+1.5)*BLOCK,z,'calcite','#eee4ff');
+                        if(!shell && r>.25)caveSprite('amethyst_cluster',x,(height+1)*BLOCK,z,.5+.4*r);
+                        caveStats.geode++;
+                    }
+                }
+                // Flowers inherit their supporting terrain height and the same track clearance.
+                const patch=(Math.sin(col*.62+Math.sin(row*.23))+Math.cos(row*.39-col*.18)+2)/4;
+                const flowerChance=.04+.38*patch*patch;
+                if(cherryGrove && depth<.16 && r>1-flowerChance && clearTrack(x,z,height*BLOCK,height*BLOCK+12)) {
+                    const chunk=Math.floor(row/12);
+                    if(!flowers.has(chunk))flowers.set(chunk,[]);
+                    const density=hash(col+19,row-7),amount=density<.45?1:density<.8?2:density<.96?3:4;
+                    flowers.get(chunk).push({x,z,y:height*BLOCK,amount,rotation:Math.floor(hash(row,col)*4)*Math.PI/2});
+                }
+                if((depth<.15||originGarden) && row%(cherryGrove?11:17)===0 && (col===0 || col===Math.floor(width/BLOCK)-1)) {
+                    const radius=cherryGrove && !mobile?2:1;
+                    const treeClear=[-radius,0,radius].every(dx=>[-radius,0,radius].every(dz=>clearTrack(x+dx*BLOCK,z+dz*BLOCK,height*BLOCK,(height+5)*BLOCK)));
+                    if(treeClear) {
+                        if(cherryGrove)cherryTrees.push({x,z,ground:height*BLOCK,radius:radius*BLOCK});
+                        for(let h=0;h<3;h++)block(x,(height+h+.5)*BLOCK,z,cherryGrove?'cherry_log':'oak_log',cherryGrove?'#ffffff':'#a0a09a');
+                        for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++) {
+                            if(cherryGrove && Math.abs(dx)===2 && Math.abs(dz)===2)continue;
+                            block(x+dx*BLOCK,(height+3.5)*BLOCK,z+dz*BLOCK,cherryGrove?'cherry_leaves':'oak_leaves',cherryGrove?'#fff0f5':'#628b3a');
+                        }
+                        for(let dx=-1;dx<=1;dx++)block(x+dx*BLOCK,(height+4.5)*BLOCK,z,cherryGrove?'cherry_leaves':'oak_leaves',cherryGrove?'#ffffff':'#73994b');
                     }
                 }
             }
@@ -205,48 +484,73 @@ export async function createWorld(app) {
             if(i%10!==6 || p.origin || !stations[i+1])return;
             const y=(p.card.y+p.card.height+stations[i+1].card.y)/2;
             const center=curve.getPointAt(parameterAt(y)),type=y/totalHeight>.49?'deepslate':'stone';
-            for(const side of [-1,1])for(let tier=0;tier<3;tier++)block(center.x+side*128,32+tier*64,center.z,type);
-            for(let col=-2;col<=2;col++)block(center.x+col*64,224,center.z,type);
+            const ground=routeElevation(y);
+            for(const side of [-1,1])for(let tier=0;tier<3;tier++)block(center.x+side*128,ground+32+tier*64,center.z,type);
+            for(let col=-2;col<=2;col++)block(center.x+col*64,ground+224,center.z,type);
         });
+        // Entrance and trackside supports share the terrain's exact block grid.
+        const entranceZ=Math.round(entrance.z/BLOCK)*BLOCK;
+        const entranceX=Math.round(entrance.x/BLOCK)*BLOCK;
+        if(!mobile) {
+            for(const sign of [-1,1])for(let tier=0;tier<2;tier++)block(entranceX+sign*96,32+tier*64,entranceZ,'cherry_log','#ffffff');
+            for(let col=-1;col<=2;col++)block(entranceX+(col-.5)*64,160,entranceZ,'cherry_planks','#ffffff');
+        } else {
+            for(const sign of [-1,1])fencePost(worldGroup,entranceX+sign*32,0,entranceZ);
+        }
         for(const {mat,blocks} of batches.values()) {
             const mesh=new THREE.InstancedMesh(cube,mat,blocks.length);
             blocks.forEach((b,i)=>{dummy.position.set(b.x,b.y,b.z);dummy.rotation.set(0,0,0);dummy.scale.setScalar(BLOCK);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);});
             mesh.castShadow=mesh.receiveShadow=true;mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();worldGroup.add(mesh);
         }
-        for(const y of bridges) {
-            const distance=parameterAt(y)*routeLength;
-            makeRibbon(mobile?52:76,-.15,planks,Math.max(0,distance-105),Math.min(routeLength,distance+105));
-            const point=curve.getPointAt(parameterAt(y));
-            for(const sign of [-1,1]) {
-                box(worldGroup,point.x+sign*(mobile?29:42),10,point.z,7,8,180,wood);
-                for(const end of [-1,1])box(worldGroup,point.x+sign*(mobile?29:42),-26,point.z+end*85,10,65,10,wood);
+        for(const {name,items} of caveSprites.values()) {
+            const mesh=new THREE.InstancedMesh(name==='sculk_sensor_tendril_inactive'?sensorTendril:caveCross,caveMaterial(name),items.length);
+            items.forEach((p,i)=>{dummy.position.set(p.x,p.y,p.z);dummy.rotation.set(0,name==='amethyst_cluster'?hash(p.x,p.z)*Math.PI:0,0);dummy.scale.setScalar(p.scale);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);});
+            mesh.castShadow=mesh.receiveShadow=true;mesh.computeBoundingSphere();worldGroup.add(mesh);
+        }
+        app.dataset.caveRegions=JSON.stringify(caveRegions.map(({kind,center,radius})=>({kind,center,radius})));
+        app.dataset.caveFeatures=JSON.stringify(caveStats);
+        app.dataset.dripstoneHeights=JSON.stringify(dripstoneHeights);
+        // Connected fence lintel above the raised track; feet stand on terrain blocks.
+        for(const [index,ramp] of ramps.entries()) {
+            if(index%3!==0)continue;
+            const center=pointAtScreen(ramp.end+30);
+            const gridX=Math.round(center.x/BLOCK)*BLOCK,z=ramp.z+BLOCK*1.5;
+            for(const sign of [-1,1])for(let level=0;level<2;level++)fencePost(worldGroup,gridX+sign*96,ramp.to+level*BLOCK,z);
+            for(let i=0;i<4;i++) {
+                const x=gridX+(i-1.5)*BLOCK,y=ramp.to+BLOCK*2;
+                fencePost(worldGroup,x,y,z);
+                if(i>0)fenceArm(worldGroup,x,y,z,Math.PI/2);
+                if(i<3)fenceArm(worldGroup,x,y,z,-Math.PI/2);
             }
+        }
+        for(const allPetals of flowers.values()) for(let quadrant=0;quadrant<4;quadrant++) {
+            const petals=allPetals.filter(p=>p.amount>quadrant);if(!petals.length)continue;
+            const mesh=new THREE.InstancedMesh(petalGeometries[quadrant],petalMaterial,petals.length);
+            petals.forEach((p,i)=>{dummy.position.set(p.x,p.y,p.z);dummy.rotation.set(0,p.rotation,0);dummy.scale.setScalar(1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);});
+            mesh.receiveShadow=true;mesh.computeBoundingSphere();worldGroup.add(mesh);
         }
         stations.forEach((p,i)=>{
             const left=p.card.x+p.card.width/2<width/2;
             const torchX=mobile?(p.origin?p.card.x+p.card.width-12:p.card.x-18):left?p.card.x+p.card.width+23:p.card.x-23;
-            makeTorch(torchX,p.y+50,p.y/totalHeight>.86 && !p.origin);
+            makeTorch(torchX,p.y+50,false);
             const railP=p.origin==='vanilla'&&branchCurve?onBranch(branchCurve,p.y).position:curve.getPointAt(parameterAt(p.y));
-            const edge=mobile?p.card.x:left?p.card.x+p.card.width:p.card.x;
-            box(worldGroup,(edge+railP.x)/2,1,railP.z+30,Math.abs(edge-railP.x),2,32,planks);
-            const deck=toWorld(p.card.x+p.card.width/2,p.card.y+p.card.height+8);
-            box(worldGroup,deck.x,0,deck.z,p.card.width+16,8,38,planks);
+            const edge=surfaceWorld(mobile?p.card.x:left?p.card.x+p.card.width:p.card.x,p.y).x;
+            box(worldGroup,(edge+railP.x)/2,railP.y,railP.z+30,Math.abs(edge-railP.x),2,32,planks);
+            const deck=surfaceWorld(p.card.x+p.card.width/2,p.card.y+p.card.height+8);
+            const deckWidth=(p.card.width+16)*(1-deck.y/Math.max(1400,width*1.25));
+            box(worldGroup,deck.x,deck.y,deck.z,deckWidth,8,38,planks);
             // Uprights visibly connect each display to its footing.
             for(const sign of [-1,1]) {
-                box(worldGroup,deck.x+sign*(p.card.width/2-20),24,deck.z+25,10,48,10,wood);
-                box(worldGroup,deck.x+sign*(p.card.width/2-20),2,deck.z+25,24,8,24,bedMaterial);
+                fencePost(worldGroup,deck.x+sign*(deckWidth/2-28),deck.y,deck.z+25);
+                box(worldGroup,deck.x+sign*(deckWidth/2-28),deck.y+2,deck.z+25,24,8,24,bedMaterial);
             }
             if(p.photo) {
                 const bottom=p.photo.y+p.photo.height;
-                const base=toWorld(p.photo.x+p.photo.width/2,bottom+42);
+                const base=surfaceWorld(p.photo.x+p.photo.width/2,bottom+42);
+                const photoWidth=p.photo.width*(1-base.y/Math.max(1400,width*1.25));
                 // Uprights end exactly at the photograph frame in screen space.
-                for(const side of [-1,1])box(worldGroup,base.x+side*(p.photo.width/2-24),35,base.z,10,70,10,wood);
-                box(worldGroup,base.x,1,base.z,p.photo.width+30,6,50,planks);
-            }
-            if(!mobile && i%4===2 && !p.origin) {
-                const z=railP.z+150;
-                for(const side of [-1,1])box(worldGroup,railP.x+side*90,64,z,16,128,16,wood);
-                box(worldGroup,railP.x,136,z,196,16,20,wood);
+                for(const side of [-1,1])fencePost(worldGroup,base.x+side*(photoWidth/2-24),base.y,base.z);
+                box(worldGroup,base.x,base.y+1,base.z,photoWidth+30,6,50,planks);
             }
         });
         if(branchCurve) {
@@ -264,9 +568,6 @@ export async function createWorld(app) {
             box(worldGroup,x,20,z,40,40,40,[side,side,material('crafting_table_top','#d1b994'),planks,front,front]);
             makeTorch(x+45,(z*.8)+20,false);
         }
-        const gantryX=width*(mobile?.85:.78),gantryZ=350/.8;
-        for(const side of [-1,1])box(worldGroup,gantryX+side*(mobile?43:85),64,gantryZ,16,128,16,wood);
-        box(worldGroup,gantryX,136,gantryZ,mobile?110:190,16,20,wood);
 
     }
 
@@ -351,6 +652,40 @@ export async function createWorld(app) {
     const particlePositions=new Float32Array(particleCount*3);particleGeo.setAttribute('position',new THREE.BufferAttribute(particlePositions,3));
     const particleMat=own(new THREE.PointsMaterial({color:0xe8d7a1,size:2,transparent:true,opacity:.45,sizeAttenuation:false,depthWrite:false}));
     const particles=new THREE.Points(particleGeo,particleMat);particles.frustumCulled=false;scene.add(particles);
+    const cherryCapacity=lowPower?12:32,petalsPerTree=lowPower?6:15;
+    const cherryParticles=[0,5,9].map(frame=>{
+        const geometry=own(new THREE.BufferGeometry()),positions=new Float32Array(cherryCapacity*3);
+        geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));geometry.setDrawRange(0,0);
+        const mat=own(new THREE.PointsMaterial({map:textures[`../particle/cherry_${frame}`],size:lowPower?7:9,
+            color:0xffe4ef,transparent:true,opacity:.85,alphaTest:.1,sizeAttenuation:false,depthWrite:false}));
+        const mesh=new THREE.Points(geometry,mat);mesh.frustumCulled=false;mesh.visible=false;scene.add(mesh);
+        return {mesh,geometry,positions,count:0};
+    });
+    let visibleCherryPetals=0;
+    function updateCherryPetals(scrollY,height,time,reduce) {
+        cherryParticles.forEach(batch=>{batch.count=0;});
+        if(!reduce)cherryTrees.forEach((tree,index)=>{
+            const top=(tree.z-tree.radius)*.8-(tree.ground+220)*.6;
+            const bottom=(tree.z+tree.radius+40)*.8-tree.ground*.6;
+            if(bottom<scrollY || top>scrollY+height)return;
+            for(let i=0;i<petalsPerTree;i++) {
+                const batch=cherryParticles[i%3];if(batch.count>=cherryCapacity)continue;
+                // Stable world-space seeds keep petals attached to their tree while scrolling.
+                const seed=index*31+i,life=(time/(11000+hash(seed,8)*5000)+hash(seed,2))%1;
+                const sway=Math.sin(time*.001+seed)*12+Math.sin(time*.00043+seed)*7;
+                const n=batch.count++*3;
+                batch.positions[n]=tree.x+(hash(seed,3)-.5)*tree.radius*1.8+sway+life*24;
+                batch.positions[n+1]=tree.ground+12+(1-life)*178;
+                batch.positions[n+2]=tree.z+(hash(seed,4)-.5)*tree.radius*1.8+life*35;
+            }
+        });
+        visibleCherryPetals=0;
+        for(const batch of cherryParticles) {
+            batch.geometry.setDrawRange(0,batch.count);batch.mesh.visible=batch.count>0;
+            batch.geometry.attributes.position.needsUpdate=true;visibleCherryPetals+=batch.count;
+        }
+        app.dataset.cherryPetals=String(visibleCherryPetals);
+    }
     const warmLight=new THREE.PointLight(0xffb747,1700,180,2);scene.add(warmLight);
 
     let chestRenderer=null;
@@ -379,6 +714,7 @@ export async function createWorld(app) {
         });
     }
     function drawChest(view) {
+        transverseDepth.value=0;
         view.pose(view.amount);chestRenderer.render(view.scene,view.camera);view.context.clearRect(0,0,132,160);view.context.drawImage(chestRenderer.domElement,0,0);view.dirty=false;
         view.button.dataset.openAmount=view.amount.toFixed(3);
     }
@@ -396,7 +732,13 @@ export async function createWorld(app) {
         });
     }
     function resetChests() {for(const view of chestViews.values()) {view.amount=0;view.dirty=true;}}
-    const forward=new THREE.Vector3(0,0,1);
+    const worldUp=new THREE.Vector3(0,1,0),headingOrigin=new THREE.Vector3(),headingMatrix=new THREE.Matrix4();
+    function setCartHeading(quaternion,tangent) {
+        // Local +Z faces newer history (-tangent). Constrain up as well as forward:
+        // a shortest-arc rotation alone can roll the cart upside down near -Z.
+        headingMatrix.lookAt(headingOrigin,tangent,worldUp);
+        return quaternion.setFromRotationMatrix(headingMatrix);
+    }
     let previousPageScroll=null, facingDown=false, riderTurn=0, previousTurnTime=null;
     function render(y,scrollY,time,reduce,active) {
         if(disposed||!curve)return;
@@ -434,8 +776,8 @@ export async function createWorld(app) {
             branchCart.position.copy(branch.position);branchCart.position.y+=1;
             // Both carts approach the same position and heading before the second disappears.
             branchCart.position.lerp(cart.position,1-blend);
-            branchCart.quaternion.setFromUnitVectors(forward,branch.tangent.negate());
-            const sharedHeading=new THREE.Quaternion().setFromUnitVectors(forward,tangent.clone().negate());
+            setCartHeading(branchCart.quaternion,branch.tangent);
+            const sharedHeading=setCartHeading(new THREE.Quaternion(),tangent);
             branchCart.quaternion.slerp(sharedHeading,1-blend);
             branchCart.traverse(mesh=>{if(mesh.isMesh) {
                 for(const mat of Array.isArray(mesh.material)?mesh.material:[mesh.material]) {
@@ -449,13 +791,14 @@ export async function createWorld(app) {
         app.dataset.mergeSeparation=separation.toFixed(3);
         app.dataset.routeMode=branchCurve&&y>mergeY?'origins':'shared';
         // The cart's long axis follows rail yaw AND grade in world coordinates.
-        cart.quaternion.setFromUnitVectors(forward,tangent.clone().negate());
+        setCartHeading(cart.quaternion,tangent);
         app.dataset.cartYaw=Math.atan2(tangent.x,tangent.z).toFixed(4);
         app.dataset.cartPitch=Math.asin(tangent.y).toFixed(4);
+        app.dataset.cartElevation=cart.position.y.toFixed(2);
         app.dataset.cartY=y.toFixed(1);
         torches.forEach((torch,i)=>{torch.ember.position.y=torch.baseY+(reduce?0:Math.sin(time*.009+i)*1.5);torch.ember.scale.y=reduce?5:4+Math.sin(time*.015+i)*1.2;});
         const nearest=torches[Math.min(active,torches.length-1)];
-        if(nearest) {warmLight.position.copy(nearest.group.position);warmLight.position.y=80;warmLight.color.set(nearest.soul?0x71e4e5:0xffb747);warmLight.intensity=reduce?1200:1200+Math.sin(time*.009)*180;}
+        if(nearest) {warmLight.position.copy(nearest.group.position);warmLight.position.y+=80;warmLight.color.set(nearest.soul?0x71e4e5:0xffb747);warmLight.intensity=reduce?1200:1200+Math.sin(time*.009)*180;}
         for(let i=0;i<particleCount;i++) {
             const drift=reduce?0:time*.005;
             particlePositions[i*3]=hash(i,1)*width+Math.sin(time*.0005+i)*(!reduce?5:0);
@@ -463,6 +806,8 @@ export async function createWorld(app) {
             particlePositions[i*3+2]=(scrollY+((hash(i,2)*height-drift)%height+height)%height)/.8;
         }
         particleGeo.attributes.position.needsUpdate=true;
+        updateCherryPetals(scrollY,height,time,reduce);
+        transverseDepth.value=1/Math.max(1400,width*1.25);
         renderer.render(scene,camera);
         for(const view of chestViews.values()) {
             if(!view.dirty)continue;
@@ -479,10 +824,9 @@ export async function createWorld(app) {
     }
     return {
         layout,render,openChest,resetChests,dispose,
-        // Mobile renders on interaction and while the cart settles. Desktop keeps
-        // ambient torch/lava animation running continuously.
+        // Phones animate only while a cherry canopy is visible; other settled scenes idle.
         frameInterval:lowPower?40:32,
-        continuous:!lowPower,
+        get continuous() {return !lowPower || visibleCherryPetals>0;},
     };
 }
 

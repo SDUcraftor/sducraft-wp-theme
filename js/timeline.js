@@ -14,6 +14,13 @@
         const signal = events.signal;
         const reduce = matchMedia('(prefers-reduced-motion: reduce)');
         const stops = [...app.querySelectorAll('.mc-milestone-block')];
+        // A few breathing spaces let the cave pockets remain visible between stories,
+        // especially when photos and cards share a single column on phones.
+        stops.forEach(stop=>delete stop.dataset.scenery);
+        const scenicStops=stops.slice(0,-1).filter((stop,i)=>!stop.dataset.origin && !stops[i+1].dataset.origin);
+        if(scenicStops.length>=10)for(const [kind,fraction] of [['lush',.28],['deepdark',.43],['geode',.54],['lush',.65],['dripstone',.76]]) {
+            scenicStops[Math.floor((scenicStops.length-1)*fraction)].dataset.scenery=kind;
+        }
         const dialog = app.querySelector('dialog');
         const content = dialog.querySelector('.mc-book-content');
         let chromeTimer=0;
@@ -31,7 +38,7 @@
                 const y = c.top - rect.top + c.height / 2;
                 stop.querySelector('.mc-stop-anchor').style.top = `${c.top - stop.getBoundingClientRect().top + c.height / 2}px`;
                 const photo = stop.querySelector('.mc-memory-display')?.getBoundingClientRect();
-                return {x:a.left - rect.left, y, year:stop.dataset.year, origin:stop.dataset.origin,
+                return {x:a.left - rect.left, y, year:stop.dataset.year, origin:stop.dataset.origin, scenery:stop.dataset.scenery,
                     card:{x:c.left - rect.left, y:c.top - rect.top, width:c.width, height:c.height},
                     photo:photo ? {x:photo.left-rect.left,y:photo.top-rect.top,width:photo.width,height:photo.height} : null};
             });
