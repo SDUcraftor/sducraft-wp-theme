@@ -13,6 +13,11 @@
         const events = new AbortController();
         const signal = events.signal;
         const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+        const limited = matchMedia('(pointer: coarse)').matches || innerWidth < 600 || (navigator.deviceMemory && navigator.deviceMemory <= 4) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
+        const quality = app.dataset.quality === 'auto' ? (limited ? 'low' : 'standard') : (app.dataset.quality || 'standard');
+        let profile = {};
+        try { profile = JSON.parse(app.dataset.qualityProfiles || '{}')[quality] || {}; } catch (_) {}
+        app.timelineQuality = {name: quality, ...profile};
         const stops = [...app.querySelectorAll('.mc-milestone-block')];
         // A few breathing spaces let the cave pockets remain visible between stories,
         // especially when photos and cards share a single column on phones.
@@ -251,7 +256,9 @@
         layout(); cartY = targetY;
         const worldURL = new URL('timeline-world.js', scriptURL);
         worldURL.search = new URL(scriptURL).search;
-        import(worldURL.href).then(module => module.createWorld(app)).then(async result => {
+        if (profile.render === false) {
+            app.classList.remove('is-loading'); app.classList.add('mc-no-webgl'); app.dataset.worldReady = 'fallback';
+        } else import(worldURL.href).then(module => module.createWorld(app)).then(async result => {
             await document.fonts.ready;
             await Promise.all([...app.querySelectorAll('.mc-memory-display img')].filter(img => {
                 const box = img.getBoundingClientRect(); return box.bottom > 0 && box.top < innerHeight;

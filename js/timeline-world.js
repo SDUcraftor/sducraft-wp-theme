@@ -7,15 +7,17 @@ export async function createWorld(app) {
     const canvas = app.querySelector('.mc-world-canvas');
     const coarsePointer = matchMedia('(pointer: coarse)').matches;
     const limitedHardware = (navigator.deviceMemory && navigator.deviceMemory <= 4) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
-    const lowPower = coarsePointer || limitedHardware || innerWidth < 600;
+    const profile = app.timelineQuality || {};
+    const quality = profile.name || app.dataset.quality || 'auto';
+    const lowPower = quality === 'low' || (quality === 'auto' && (coarsePointer || limitedHardware || innerWidth < 600));
     const renderer = new THREE.WebGLRenderer({canvas,alpha:true,antialias:false,powerPreference:'low-power'});
-    renderer.setPixelRatio(Math.min(devicePixelRatio, lowPower ? 1 : 1.5));
+    renderer.setPixelRatio(Math.min(devicePixelRatio, profile.ratio ?? (lowPower ? 1 : quality === 'high' ? 2 : 1.5)));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     app.dataset.worldQuality = lowPower ? 'mobile' : 'full';
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera();
     scene.add(new THREE.HemisphereLight(0xfff0dd,0x283039,1.45));
-    renderer.shadowMap.enabled=!lowPower; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    renderer.shadowMap.enabled=profile.shadows ?? !lowPower; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     const sun = new THREE.DirectionalLight(0xffeed0,2.5); sun.position.set(-300,600,100); scene.add(sun); scene.add(sun.target); sun.castShadow=true; sun.shadow.mapSize.set(innerWidth<900?1024:2048,innerWidth<900?1024:2048); sun.shadow.normalBias=1.2; sun.shadow.bias=-.0002;
     const textures = {}, owned = new Set();
     const transverseDepth={value:0};
@@ -592,10 +594,10 @@ export async function createWorld(app) {
     const rider = new THREE.Group(); cart.add(rider);
     rider.position.set(0,8,-3); rider.scale.setScalar(1.45);
     let riderConfig = {default:{skin:'steve.png',model:'classic'},switches:[]};
-    const configURL = new URL(app.dataset.riderConfig,document.baseURI);
+    const skinBaseURL = new URL(assets.base.replace(/\/$/, '') + '/assets/skin/', document.baseURI);
     try {
-        const response=await fetch(configURL,{cache:'no-cache'});
-        if(response.ok) riderConfig={...riderConfig,...await response.json()};
+        const settings=JSON.parse(app.dataset.riderSettings || 'null');
+        if(settings) riderConfig={...riderConfig,...settings};
     } catch(error) {console.warn('Timeline rider: using Steve.',error);}
     const normalize = value => typeof value==='string'?{skin:value,model:'classic'}:{skin:value?.skin||'none',model:value?.model==='slim'?'slim':'classic'};
     const defaultSkin=normalize(riderConfig.default);
@@ -606,7 +608,7 @@ export async function createWorld(app) {
     const skinTextures=new Map();
     await Promise.all([...new Set(['steve.png',defaultSkin.skin,branchSkins.restoration.skin,branchSkins.vanilla.skin,...switches.map(rule=>rule.skin)])].filter(name=>name!=='none').map(async name=>{
         try {
-            const texture=own(await loader.loadAsync(new URL(name,configURL).href));
+            const texture=own(await loader.loadAsync(new URL(name,skinBaseURL).href));
             if(texture.image.width!==64 || texture.image.height!==64) {console.warn('Timeline rider: expected a 64×64 skin:',name);return;}
             texture.colorSpace=THREE.SRGBColorSpace;texture.magFilter=texture.minFilter=THREE.NearestFilter;skinTextures.set(name,texture);
         } catch(error) {console.warn('Timeline rider: skin unavailable:',name);}
@@ -650,12 +652,12 @@ export async function createWorld(app) {
         if(branchCurve && y>mergeY)setting=branchSkins.restoration;
         setRider(setting);setRider(branchSkins.vanilla,branchRider);
     }
-    const particleCount=lowPower?24:70;
+    const particleCount=profile.particles ?? (lowPower?24:quality==='high'?100:70);
     const particleGeo=own(new THREE.BufferGeometry());
     const particlePositions=new Float32Array(particleCount*3);particleGeo.setAttribute('position',new THREE.BufferAttribute(particlePositions,3));
     const particleMat=own(new THREE.PointsMaterial({color:0xe8d7a1,size:2,transparent:true,opacity:.45,sizeAttenuation:false,depthWrite:false}));
     const particles=new THREE.Points(particleGeo,particleMat);particles.frustumCulled=false;scene.add(particles);
-    const cherryCapacity=lowPower?12:32,petalsPerTree=lowPower?6:15;
+    const cherryCapacity=profile.petals ?? (lowPower?12:32),petalsPerTree=lowPower?6:15;
     const cherryParticles=[0,5,9].map(frame=>{
         const geometry=own(new THREE.BufferGeometry()),positions=new Float32Array(cherryCapacity*3);
         geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));geometry.setDrawRange(0,0);
@@ -828,7 +830,7 @@ export async function createWorld(app) {
     return {
         layout,render,openChest,resetChests,dispose,
         // Phones animate only while a cherry canopy is visible; other settled scenes idle.
-        frameInterval:lowPower?40:32,
+        frameInterval:1000 / (profile.fps || (lowPower?25:30)),
         get continuous() {return !lowPower || visibleCherryPetals>0;},
     };
 }

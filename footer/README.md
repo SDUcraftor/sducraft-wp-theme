@@ -7,9 +7,12 @@ SDUcraft 子主题。入口是 `bootstrap.php`，由主题根目录的 `function
 ## 文件
 
 - `bootstrap.php`：注册脚本、样式并输出组件。
+- `settings.php`：共用方块定义、彩蛋配置转换和页脚配置过滤器；由 `opt/bootstrap.php` 加载。
+- 后台字段位于 `../opt/sections/footer.php`。
 - `mc-footer.php`：页脚结构和前端配置。
 - `mc-footer.css`：组件样式。
-- `mc-world.js`：方块类型、地层和特殊结构。
+- `blocks.json`：唯一的方块定义，供前台世界、后台选项及校验共用。
+- `mc-world.js`：地层和特殊结构。
 - `mc-footer.js`：点火、挖掘、粒子和弹窗交互。
 - `easter-eggs.php`：SDUcraft 当前使用的彩蛋。
 - `../assets/minecraft/`：Minecraft 方块、物品、粒子与音效资源。
@@ -18,7 +21,7 @@ SDUcraft 子主题。入口是 `bootstrap.php`，由主题根目录的 `function
 
 `mc-world.js` 中：
 
-- `blocks` 定义方块纹理、硬度、挖掘音效和是否可挖掘。
+- `blocks` 从 `blocks.json` 读取，定义方块纹理、硬度、挖掘音效和是否可挖掘。新增方块只维护此文件；可挖掘方块自动加入后台目标选项。
 - `layers` 定义地层顺序和厚度。
 - `structures` 在基础地层中生成树木、矿物和建筑。
 
@@ -41,3 +44,13 @@ SDUcraft 子主题。入口是 `bootstrap.php`，由主题根目录的 `function
 默认彩蛋音效与全局交互参数分别由
 `sducraft_mc_footer_default_easter_egg_sound` 和
 `sducraft_mc_footer_config` 过滤器调整。
+
+## 后台自定义彩蛋
+
+「SDUCraft 设置 → 自定义页脚 → 彩蛋设置」中的自定义彩蛋分区使用整行编辑。
+支持图片、正文、固定位置、横向随机、深度随机、优先目标方块、单独静音与自定义音效。
+两项随机同时开启时在全图选择位置，再匹配可挖掘方块。指定方块优先在附近寻找，随后尝试全图同类方块；没有时退回附近可挖掘方块，不会替换世界方块。
+内置彩蛋仍由注册代码控制，后台不再覆盖其位置、音效或启用状态。
+
+横向可选随机、百分比、固定格数；固定格数从左侧第 1 格起计，超过当前屏幕列数时取最右一格。注册数据中的 `column` 为零起始列索引，优先于 `x`。
+深度可选随机或固定格数，以草地为 0。音效使用开／关开关，开启时显示路径，路径留空使用默认音效。

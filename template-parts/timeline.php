@@ -2,13 +2,9 @@
 
 /** One server-rendered history for WordPress and the local preview. */
 if (!defined('ABSPATH')) exit;
-$timeline_role = function ($item) {
-    $date = $item['year'];
-    $slug = urldecode($item['slug']);
-    if ($date === '2021-10-16' && strpos($slug, '合并') !== false) return 'merge';
-    if ($date === '2021-10-16' || $date === '2021-02-06') return 'restoration';
-    if ($date === '2021-10-02') return 'vanilla';
-    return '';
+$timeline_roles = sducraft_timeline_roles($items);
+$timeline_role = function ($item) use ($timeline_roles) {
+    return $timeline_roles[$item['id']] ?? '';
 };
 // Stable date sort: same-day entries retain their established editorial order.
 foreach ($items as $i => &$item) $item['_order'] = $i;
@@ -23,7 +19,9 @@ $latest = $items[0]['year'];
 ?>
 <div id="mc-timeline-app" 
      class="mc-viewport" 
-     data-rider-config="<?php echo esc_url($assets . '/skin/rider.json'); ?>" 
+     data-quality="<?php echo esc_attr(sducraft_opt('timeline_quality', 'auto')); ?>"
+     data-quality-profiles="<?php echo esc_attr(wp_json_encode(sducraft_quality_profiles())); ?>"
+     data-rider-settings="<?php echo esc_attr(wp_json_encode(sducraft_rider_settings($items))); ?>"
      data-textures="<?php echo esc_url($assets . '/minecraft/texture/block/'); ?>" 
      data-minecart-model="<?php echo esc_url($assets . '/minecraft/model/minecart.glb'); ?>" 
      data-chest-model="<?php echo esc_url($assets . '/minecraft/model/end_chest.glb'); ?>"

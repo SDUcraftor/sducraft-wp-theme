@@ -19,7 +19,7 @@ body.dark .entry-content p.text-white {
 
 @font-face {
     font-family: Minecraft;
-    src: url(https://www.sducraft.top:8443/wp-content/uploads/2026/04/1775897931-Minecraft.ttf);
+    src: url('assets/minecraft/font/Minecraft.ttf');
     font-weight: normal;
 }
 

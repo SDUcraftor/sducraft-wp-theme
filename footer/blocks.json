@@ -1,0 +1,49 @@
+{
+  "sky": {
+    "label": "空气",
+    "mineable": false,
+    "className": "is-sky"
+  },
+  "grass": {
+    "label": "草方块",
+    "texture": "texture/block/grass_block_side.png",
+    "hardness": 850,
+    "breakSound": "audio/Grass_dig4.ogg"
+  },
+  "dirt": {
+    "label": "泥土",
+    "texture": "texture/block/dirt.png",
+    "hardness": 750,
+    "breakSound": "audio/Gravel_dig3.ogg"
+  },
+  "stone": {
+    "label": "石头",
+    "texture": "texture/block/stone.png",
+    "hardness": 1450,
+    "breakSound": "audio/Stone_dig1.ogg"
+  },
+  "bedrock": {
+    "label": "基岩",
+    "texture": "texture/block/bedrock.png",
+    "mineable": false,
+    "className": "is-bedrock"
+  },
+  "log": {
+    "label": "橡木",
+    "texture": "texture/block/oak_log.png",
+    "hardness": 1100,
+    "breakSound": "audio/Wood_dig4.ogg"
+  },
+  "leaves": {
+    "label": "橡树树叶",
+    "texture": "texture/block/oak_leave.png",
+    "hardness": 500,
+    "breakSound": "audio/Grass_dig4.ogg"
+  },
+  "sapling": {
+    "label": "树苗",
+    "texture": "texture/block/oak_sapling.png",
+    "hardness": 420,
+    "breakSound": "audio/Grass_dig4.ogg"
+  }
+}

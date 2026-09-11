@@ -21,7 +21,7 @@ function sducraft_mc_footer_asset_version($relative_path) {
 }
 
 function sducraft_mc_footer_enqueue_assets() {
-    if (!is_front_page()) {
+    if (!is_front_page() || !sducraft_opt('footer_enabled', true)) {
         return;
     }
 
@@ -40,6 +40,10 @@ function sducraft_mc_footer_enqueue_assets() {
         true
     );
 
+    wp_localize_script('sducraft-mc-world', 'sducraftMCWorldData', array(
+        'blocks' => sducraft_mc_blocks(),
+    ));
+
     wp_enqueue_script(
         'sducraft-mc-footer',
         get_stylesheet_directory_uri() . '/footer/mc-footer.js',
@@ -51,7 +55,7 @@ function sducraft_mc_footer_enqueue_assets() {
 add_action('wp_enqueue_scripts', 'sducraft_mc_footer_enqueue_assets', 30);
 
 function sducraft_render_mc_footer() {
-    if (!is_front_page()) {
+    if (!is_front_page() || !sducraft_opt('footer_enabled', true)) {
         return;
     }
 
@@ -60,7 +64,7 @@ function sducraft_render_mc_footer() {
 add_action('wp_footer', 'sducraft_render_mc_footer', 5);
 
 function sducraft_mc_footer_body_class($classes) {
-    if (is_front_page()) {
+    if (is_front_page() && sducraft_opt('footer_enabled', true)) {
         $classes[] = 'sducraft-mc-footer-enabled';
     }
 

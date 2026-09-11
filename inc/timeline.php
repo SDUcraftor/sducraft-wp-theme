@@ -5,11 +5,13 @@ if (!defined('ABSPATH')) {
 }
 
 function sducraft_get_timeline_items() {
+    $category = sducraft_timeline_category();
+    if (!$category) return array();
     $posts = get_posts(array(
         'post_type' => 'post',
         'post_status' => 'publish',
         'posts_per_page' => -1,
-        'category_name' => 'our_story',
+        'cat' => $category,
         'orderby' => 'date',
         'order' => 'DESC',
         'no_found_rows' => true,
@@ -34,7 +36,7 @@ function sducraft_get_timeline_items() {
         }
         return array(
             'id' => $post->ID,
-            'year' => get_the_date('Y-m-d', $post),
+            'year' => get_post_meta($post->ID, '_sducraft_event_date', true) ?: get_the_date('Y-m-d', $post),
             'slug' => $post->post_name,
             'title' => get_the_title($post),
             'summary' => $summary,
@@ -46,7 +48,7 @@ function sducraft_get_timeline_items() {
 }
 
 function sducraft_enqueue_timeline_assets() {
-    if (!is_category('our_story')) {
+    if (!sducraft_timeline_category() || !is_category(sducraft_timeline_category())) {
         return;
     }
 
@@ -61,3 +63,10 @@ function sducraft_enqueue_timeline_assets() {
     ));
 }
 add_action('wp_enqueue_scripts', 'sducraft_enqueue_timeline_assets', 30);
+
+add_filter('category_template', function ($template) {
+    $category = sducraft_timeline_category();
+    return $category && is_category($category)
+        ? get_stylesheet_directory() . '/template-parts/timeline-page.php'
+        : $template;
+});

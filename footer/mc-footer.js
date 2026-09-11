@@ -54,12 +54,12 @@
 
     const config = {
         visibleRatio: 0.5,
-        revealDelayMs: Number(footer.dataset.revealDelay) || 4000,
+        revealDelayMs: footer.dataset.revealDelay === undefined ? 4000 : Math.max(0, Number(footer.dataset.revealDelay)),
         ignitionAttempts: Number(footer.dataset.ignitionAttempts) || 5,
         inputCooldownMs: 180,
         fuseDurationMs: 2830,
         scrollThreshold: Number(footer.dataset.scrollThreshold) || 600,
-        masterVolume: 0.68,
+        masterVolume: footer.dataset.volume === undefined ? 0.68 : Math.max(0, Math.min(1, Number(footer.dataset.volume))),
     };
 
     function readEasterEggs() {
@@ -186,7 +186,7 @@
         item.preload = 'auto';
         item.volume = config.masterVolume;
     });
-    audio.landing.volume = Math.min(1, config.masterVolume + 0.14);
+    audio.landing.volume = config.masterVolume > 0 ? Math.min(1, config.masterVolume + 0.14) : 0;
 
     let state = 'idle';
     let revealTimer = 0;
@@ -216,7 +216,7 @@
     }
 
     function playSound(sound) {
-        if (!sound) return;
+        if (!sound || config.masterVolume === 0) return;
         try {
             sound.currentTime = 0;
             const playback = sound.play();
@@ -241,6 +241,7 @@
     }
 
     function primeAudio() {
+        if (config.masterVolume === 0) { removeAudioPrimingListeners(); return; }
         if (audioPrimed || audioPriming) return;
         audioPriming = true;
         const attemptsToPrime = allAudio.map((item) => {
@@ -627,7 +628,9 @@
                 : surfaceRow + egg.depth;
             if (row < 0 || row >= rows) return;
 
-            const preferredCol = egg.x === 'random'
+            const preferredCol = Number.isInteger(egg.column)
+                ? Math.min(cols - 1, Math.max(0, egg.column))
+                : egg.x === 'random'
                 ? Math.floor(Math.random() * cols)
                 : Math.round(egg.x * (cols - 1));
             const fallback = findNearestMineableBlock(row, preferredCol, cols, rows);

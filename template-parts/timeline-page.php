@@ -1,4 +1,5 @@
 <?php
+/** Category page selected explicitly by the timeline settings. */
 if (!defined('ABSPATH')) exit;
 $items = sducraft_get_timeline_items();
 $assets = get_stylesheet_directory_uri() . '/assets';

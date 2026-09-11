@@ -63,6 +63,7 @@ $mc_footer_default_easter_egg_sound = apply_filters(
     class="mc-footer"
     id="mc-footer"
     data-state="idle"
+    data-volume="<?php echo esc_attr(sducraft_opt('footer_sound', true) ? sducraft_setting_number('footer_volume', 68, 0, 100) / 100 : 0); ?>"
     data-assets-base="<?php echo esc_url($mc_footer_assets); ?>"
     data-home-url="<?php echo esc_url(home_url('/')); ?>"
     data-easter-eggs="<?php echo esc_attr(wp_json_encode($mc_footer_easter_egg_data)); ?>"

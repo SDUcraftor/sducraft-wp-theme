@@ -1,0 +1,70 @@
+/* Keep Sakurairo's controls, colours and navigation; compact only this page. */
+.sducraft-settings .csf-field {
+    padding: 16px 24px;
+}
+
+.sducraft-settings .csf-field .csf-title h4 {
+    margin-bottom: 0;
+}
+
+.sducraft-settings .csf-field-subheading {
+    padding: 12px 16px;
+    margin: 8px 12px;
+}
+
+.sducraft-settings .csf-cloneable-content > .csf-field {
+    padding: 12px 16px;
+}
+
+.sducraft-settings .csf-header-left {
+    margin-top: 0;
+}
+
+.sducraft-settings .csf-field-group .csf-cloneable-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.5;
+}
+
+.sducraft-settings .csf-cloneable-title > .csf-cloneable-header-icon {
+    position: static;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 12px;
+    width: 12px;
+    height: auto;
+    margin: 0;
+    line-height: 1;
+    transform: none;
+}
+
+.sducraft-settings .sducraft-post-select select,
+.sducraft-settings .sducraft-post-select .chosen-container {
+    width: 100% !important;
+    max-width: 100%;
+}
+
+.sducraft-settings .sducraft-full-row > .csf-title,
+.sducraft-settings .sducraft-full-row > .csf-fieldset {
+    float: none;
+    width: 100%;
+    margin-left: 0;
+}
+
+.sducraft-settings .sducraft-full-row > .csf-title {
+    margin-bottom: 14px;
+}
+
+.sducraft-settings .sducraft-full-row .csf-cloneable-item {
+    margin-bottom: 12px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+@media (max-width: 782px) {
+    .sducraft-settings .csf-field {
+        padding: 14px 16px;
+    }
+}

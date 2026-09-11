@@ -33,7 +33,7 @@ if (iro_opt('article_nextpre') == '1') {
 			'</div>';
 	
       // 下面两个方法的true参数表示“选取同一分类里的文章”，若不限定范围则改为 false
-		previous_post_link('%link', $prev_link_html, true, $classify_display_id);
-		next_post_link('%link', $next_link_html, true, $classify_display_id)  ?>
+		previous_post_link('%link', $prev_link_html, (bool) sducraft_opt('nextprev_same_category', true), $classify_display_id);
+		next_post_link('%link', $next_link_html, (bool) sducraft_opt('nextprev_same_category', true), $classify_display_id)  ?>
 	</section>
 <?php } ?>

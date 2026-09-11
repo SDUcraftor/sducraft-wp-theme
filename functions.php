@@ -1,5 +1,8 @@
 <?php
+/** SDUCraft theme entry point and existing theme extensions. */
+defined('ABSPATH') || exit;
 
+require_once __DIR__ . '/opt/bootstrap.php';
 add_action('wp_enqueue_scripts', function () {
     // 注册多个样式文件
     $styles = array(
@@ -18,14 +21,22 @@ add_action('wp_enqueue_scripts', function () {
     }
 }, 20);
 
-require_once get_stylesheet_directory() . '/footer/bootstrap.php';
-
-
-require_once( get_stylesheet_directory() . '/inc/announcement-page.php' );
-require_once get_stylesheet_directory() . '/inc/modpack-post-type.php';
-require_once get_stylesheet_directory() . '/inc/category-posts.php';
-require_once get_stylesheet_directory() . '/inc/timeline.php';
-
+add_action('wp_enqueue_scripts', function () {
+    if (is_front_page()) {
+        wp_enqueue_script(
+            'sducraft-hero',
+            get_stylesheet_directory_uri() . '/js/hero.js',
+            array(),
+            wp_get_theme()->get('Version'),
+            true
+        );
+    }
+}, 20);
+require_once __DIR__ . '/footer/bootstrap.php';
+require_once __DIR__ . '/inc/announcement-page.php';
+require_once __DIR__ . '/inc/modpack-post-type.php';
+require_once __DIR__ . '/inc/category-posts.php';
+require_once __DIR__ . '/inc/timeline.php';
 /**
  * @author Billadom
  * 给 wp:query 的 query 参数中添加了一些参数
@@ -142,25 +153,6 @@ add_filter('upload_mimes', function($mimes) {
 
 	return $mimes;
 }, 10);
-
-/**
- * @author Billadom
- * 给标签包含“归档”文章的标题块增加删除线效果
- * 
- * 已由公告页模板实现，故弃用
- */ 
-// add_filter('the_title', function($title, $id) {
-// 	if (is_admin() || !in_the_loop()) {
-// 		return $title;
-// 	}
-// 	// 判断标签是否包含“归档”(标签别名 archived )
-// 	if (has_tag('archived', $id)) {
-// 		return '<del style="text-decoration: line-through; color: #888; opacity: 0.7;">' . $title . '</del>';
-// 	}
-
-// 	return $title;
-// }, 10, 2);
-
 /**
  * @author Billadom
  * 增加FileBird文件夹显示的短代码
@@ -278,7 +270,6 @@ document.addEventListener("DOMContentLoaded", function() {
 <?php
 }
 add_action('wp_footer', 'query_loop_force_full_reload');
-
 /**
  * @author Billadom
  */
@@ -296,7 +287,6 @@ function iro_render_text_only_menu_item($item_output, $item, $depth, $args) {
     return $item_output;
 }
 add_filter('walker_nav_menu_start_el', 'iro_render_text_only_menu_item', 10, 4);
-
 /**
  * @author Billadom
  * 用于生成不同时间显示不同slider的短代码
@@ -329,15 +319,3 @@ function sducraft_timed_smartslider($atts) {
     );
 }
 add_shortcode('timed_smartslider', 'sducraft_timed_smartslider');
-
-add_action('wp_enqueue_scripts', function () {
-    if (is_front_page()) {
-        wp_enqueue_script(
-            'sducraft-hero',
-            get_stylesheet_directory_uri() . '/js/hero.js',
-            array(),
-            wp_get_theme()->get('Version'),
-            true
-        );
-    }
-}, 20);
