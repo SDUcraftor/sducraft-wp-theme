@@ -1,4 +1,14 @@
 /* Keep Sakurairo's controls, colours and navigation; compact only this page. */
+ .sducraft-settings .sducraft-skin-preview-button { margin-left: 8px; }
+.sducraft-skin-dialog { box-sizing: border-box; width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); padding: 20px; border: 1px solid #dcdcde; border-radius: 12px; box-shadow: 0 20px 70px #0004; }
+.sducraft-skin-dialog::backdrop { background: #10182088; }
+.sducraft-skin-dialog header, .sducraft-skin-dialog footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.sducraft-skin-dialog h2 { margin: 0; font-size: 18px; }
+.sducraft-skin-stage { height: min(440px, 55dvh); margin-top: 16px; background: radial-gradient(ellipse, #fff, #e5ebf1); border-radius: 8px; overflow: hidden; }
+.sducraft-skin-stage canvas { display: block; touch-action: none; cursor: grab; }
+.sducraft-skin-stage canvas:active { cursor: grabbing; }
+.sducraft-skin-stage canvas:focus-visible { outline: 2px solid #2271b1; outline-offset: -3px; }
+.sducraft-skin-dialog p, .sducraft-skin-dialog footer span { color: #646970; font-size: 12px; }
 .sducraft-settings .csf-field {
     padding: 16px 24px;
 }

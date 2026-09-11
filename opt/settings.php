@@ -25,7 +25,8 @@ add_action('after_setup_theme', function () {
 
 add_action('admin_enqueue_scripts', function ($hook) {
     if ($hook !== 'toplevel_page_sducraft_options') return;
-    wp_enqueue_style('sducraft-settings', get_stylesheet_directory_uri() . '/css/settings.css', array(), filemtime(get_stylesheet_directory() . '/css/settings.css'));
+    wp_enqueue_style('sducraft-settings', get_stylesheet_directory_uri() . '/opt/assets/css/settings.css', array(), filemtime(get_stylesheet_directory() . '/opt/assets/css/settings.css'));
+    wp_enqueue_script('sducraft-skin-preview', get_stylesheet_directory_uri() . '/opt/assets/js/skin-preview.js', array('jquery'), filemtime(get_stylesheet_directory() . '/opt/assets/js/skin-preview.js'), true);
 });
 
 add_filter('custom_menu_order', '__return_true');

@@ -66,7 +66,8 @@ SDUCraft/
 ├─ single-sducraft_modpack.php   整合包详情模板
 ├─ inc/                          PHP 功能模块及时间线编辑字段
 ├─ opt/                          设置入口、读取助手及后台页面
-│  └─ sections/                  通用、时间线、页脚设置字段
+│  ├─ sections/                  通用、时间线、页脚设置字段
+│  └─ assets/                    设置页专用 CSS 和 JavaScript
 ├─ user/                         可由后台选择的页面模板
 ├─ template-parts/               模板片段及动态选择的时间线页面
 ├─ css/                          功能样式
@@ -110,3 +111,5 @@ git diff --check
 ## 时间线与部署清理
 
 时间线入口为 `template-parts/timeline-page.php`，资源目录说明见 [assets/README.md](assets/README.md)，皮肤设置见 [assets/skin/README.md](assets/skin/README.md)。
+
+设置页面专用静态资源集中在 `opt/assets/`：布局样式为 `css/settings.css`，皮肤预览为 `js/skin-preview.js`。根目录 `css/`、`js/` 保留前台及其它功能模块资源。

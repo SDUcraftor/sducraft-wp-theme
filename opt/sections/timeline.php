@@ -33,7 +33,7 @@ foreach (sducraft_quality_defaults() as $name => $defaults) {
 Sakurairo_CSF::createSection($prefix, array('parent' => 'sducraft_timeline', 'title' => '画质设置', 'icon' => 'fa fa-desktop', 'fields' => $fields));
 $skinFields = static function ($skinId, $modelId) use ($field) {
     return array(
-        $field($skinId, '皮肤图片', 'upload', '', array('library' => 'image', 'desc' => '选择 64×64 PNG 皮肤；留空隐藏人物。')),
+        $field($skinId, '皮肤图片', 'upload', '', array('class' => 'sducraft-skin-field', 'library' => 'image', 'desc' => '选择 64×64 PNG 皮肤；点击“3D 预览”可旋转查看人物，留空隐藏人物。')),
         $field($modelId, '人物模型', 'select', 'classic', array('options' => array('classic' => 'Classic（Steve模型）', 'slim' => 'Slim（Alex模型）'))),
     );
 };
