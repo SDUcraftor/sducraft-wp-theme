@@ -32,7 +32,7 @@ SDUcraft 官网使用的 WordPress 子主题，基于
 时间线下设基础设置、画质设置、矿车人物三个栏目；人物切换规则位于矿车人物页的三个人物设置下方，以独立标题分区并整行展示。画质设置可分别调整省电／标准／高画质的 FPS 上限、3D 开关、阴影、像素比例及环境／樱花粒子数量。自动模式选择省电或标准档；关闭 3D 使用静态轨道。
 
 
-品牌文案、公告标签及世界生成规则仍在代码中维护。
+品牌文案、公告标签及复杂世界生成规则仍在代码中维护。
 字体和信纸装饰使用主题内资源。修改后需进行 PHP 语法检查及真实 WordPress 后台、PJAX 浏览验证。
 
 ## 功能模块
@@ -113,3 +113,5 @@ git diff --check
 时间线入口为 `template-parts/timeline-page.php`，资源目录说明见 [assets/README.md](assets/README.md)，皮肤设置见 [assets/skin/README.md](assets/skin/README.md)。
 
 设置页面专用静态资源集中在 `opt/assets/`：布局样式为 `css/settings.css`，皮肤预览为 `js/skin-preview.js`。根目录 `css/`、`js/` 保留前台及其它功能模块资源。
+
+「自定义页脚 → 世界设置」支持固定顺序的地层厚度、地表装饰开关和挖掘速度倍率，详见 `footer/README.md`。

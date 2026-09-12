@@ -625,7 +625,7 @@
         easterEggs.forEach((egg) => {
             const row = egg.depth === 'random'
                 ? Math.floor(Math.random() * rows)
-                : surfaceRow + egg.depth;
+                : Math.max(0, Math.min(rows - 1, surfaceRow + egg.depth));
             if (row < 0 || row >= rows) return;
 
             const preferredCol = Number.isInteger(egg.column)
@@ -722,7 +722,7 @@
             block,
             pointerId: event.pointerId,
             startedAt: performance.now(),
-            hardness: Number(block.dataset.hardness),
+            hardness: Number(block.dataset.hardness) / worldDefinition.miningSpeed,
             stage: -1,
             frame: 0,
         };

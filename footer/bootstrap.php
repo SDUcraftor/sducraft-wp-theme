@@ -42,6 +42,7 @@ function sducraft_mc_footer_enqueue_assets() {
 
     wp_localize_script('sducraft-mc-world', 'sducraftMCWorldData', array(
         'blocks' => sducraft_mc_blocks(),
+        'settings' => sducraft_mc_world_settings(),
     ));
 
     wp_enqueue_script(

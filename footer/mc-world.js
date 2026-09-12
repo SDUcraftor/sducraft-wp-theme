@@ -4,18 +4,14 @@
     const blocks = window.sducraftMCWorldData.blocks;
 
     // Layers are ordered from the top of the world to the bottom.
-    const layers = [
-        { type: 'sky', count: 6 },
-        { type: 'grass', count: 1 },
-        { type: 'dirt', count: 3 },
-        { type: 'stone', count: 8 },
-        { type: 'bedrock', count: 1 },
-    ];
+    const settings = window.sducraftMCWorldData.settings;
+    const layers = settings.layers;
 
     // Structures replace the base layer at matching cells. Coordinates use
     // depth relative to grass: grass is 0 and the row above it is -1.
     const structures = [
         function oakTree(cell) {
+            if (!settings.oakTree || layers[0].count < 6) return null;
             if (cell.baseType !== 'sky') return null;
 
             const treeColumn = Math.floor(cell.columns * 0.72);
@@ -28,6 +24,7 @@
             return null;
         },
         function sapling(cell) {
+            if (!settings.sapling) return null;
             if (cell.baseType !== 'sky') return null;
             if (cell.depth === -1 && cell.column === Math.floor(cell.columns * 0.25)) return 'sapling';
             return null;
@@ -81,6 +78,7 @@
         blocks,
         layers,
         structures,
+        miningSpeed: settings.miningSpeed,
         getLayout,
         getType,
         getBlock(type) {
