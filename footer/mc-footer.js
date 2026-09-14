@@ -165,21 +165,40 @@
         return sounds.filter((sound) => typeof sound === 'string' && sound.length > 0);
     }
 
+    // 方块音效延迟到地下区域打开时再创建，避免首页初始加载几十个音频资源。
     const blockSounds = new Map();
-    Object.values(worldDefinition.blocks).forEach((block) => {
-        blockSoundSources(block).forEach((path) => {
-            const source = assetUrl(path);
-            if (!blockSounds.has(source)) blockSounds.set(source, new Audio(source));
-        });
-    });
-
     const miningSounds = new Map();
-    Object.values(worldDefinition.blocks).forEach((block) => {
-        blockSoundSources(block, 'hitSound').forEach((path) => {
-            const source = assetUrl(path);
-            if (!miningSounds.has(source)) miningSounds.set(source, new Audio(source));
+    let miningAudioLoaded = false;
+
+    function loadMiningAudio() {
+        if (miningAudioLoaded) return;
+        miningAudioLoaded = true;
+
+        Object.values(worldDefinition.blocks).forEach((block) => {
+            blockSoundSources(block).forEach((path) => {
+                const source = assetUrl(path);
+                if (!blockSounds.has(source)) blockSounds.set(source, new Audio(source));
+            });
+
+            blockSoundSources(block, 'hitSound').forEach((path) => {
+                const source = assetUrl(path);
+                if (!miningSounds.has(source)) miningSounds.set(source, new Audio(source));
+            });
         });
-    });
+
+        [...blockSounds.values(), ...miningSounds.values()].forEach((item) => {
+            item.preload = 'auto';
+            item.volume = config.masterVolume;
+        });
+
+        miningSounds.forEach((sound) => {
+            // Java Edition block hit: (volume + 1) / 8, pitch * 0.5 (grass: 1, 1).
+            sound.volume = config.masterVolume * .25;
+            sound.playbackRate = .5;
+            sound.preservesPitch = false;
+            sound.webkitPreservesPitch = false;
+        });
+    }
 
     const easterEggSounds = new Map();
     if (assets.easterEggDefault) {
@@ -195,20 +214,13 @@
         }
     });
 
-    const allAudio = [...Object.values(audio), ...blockSounds.values(), ...miningSounds.values(), ...easterEggSounds.values()];
+    // 初始阶段只预加载固定交互和彩蛋音效；挖掘音效由 loadMiningAudio() 管理。
+    const allAudio = [...Object.values(audio), ...easterEggSounds.values()];
     allAudio.forEach((item) => {
         item.preload = 'auto';
         item.volume = config.masterVolume;
     });
     audio.landing.volume = config.masterVolume > 0 ? Math.min(1, config.masterVolume + 0.14) : 0;
-    miningSounds.forEach((sound) => {
-        // Java Edition block hit: (volume + 1) / 8, pitch * 0.5 (grass: 1, 1).
-        sound.volume = config.masterVolume * .25;
-        sound.playbackRate = .5;
-        sound.preservesPitch = false;
-        sound.webkitPreservesPitch = false;
-    });
-
     let state = 'idle';
     let revealTimer = 0;
     let landingTimer = 0;
@@ -576,6 +588,7 @@
 
     function openUnderground() {
         if (state !== 'crater-ready') return;
+        loadMiningAudio();
         buildWorld();
         underground.setAttribute('aria-hidden', 'false');
         setState('underground-open');
