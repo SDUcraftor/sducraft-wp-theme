@@ -160,11 +160,25 @@
         landing: new Audio(assets.landing),
     };
 
+    function blockSoundSources(block, key = 'breakSound') {
+        const sounds = Array.isArray(block[key]) ? block[key] : [block[key]];
+        return sounds.filter((sound) => typeof sound === 'string' && sound.length > 0);
+    }
+
     const blockSounds = new Map();
     Object.values(worldDefinition.blocks).forEach((block) => {
-        if (!block.breakSound) return;
-        const source = assetUrl(block.breakSound);
-        if (!blockSounds.has(source)) blockSounds.set(source, new Audio(source));
+        blockSoundSources(block).forEach((path) => {
+            const source = assetUrl(path);
+            if (!blockSounds.has(source)) blockSounds.set(source, new Audio(source));
+        });
+    });
+
+    const miningSounds = new Map();
+    Object.values(worldDefinition.blocks).forEach((block) => {
+        blockSoundSources(block, 'hitSound').forEach((path) => {
+            const source = assetUrl(path);
+            if (!miningSounds.has(source)) miningSounds.set(source, new Audio(source));
+        });
     });
 
     const easterEggSounds = new Map();
@@ -181,12 +195,19 @@
         }
     });
 
-    const allAudio = [...Object.values(audio), ...blockSounds.values(), ...easterEggSounds.values()];
+    const allAudio = [...Object.values(audio), ...blockSounds.values(), ...miningSounds.values(), ...easterEggSounds.values()];
     allAudio.forEach((item) => {
         item.preload = 'auto';
         item.volume = config.masterVolume;
     });
     audio.landing.volume = config.masterVolume > 0 ? Math.min(1, config.masterVolume + 0.14) : 0;
+    miningSounds.forEach((sound) => {
+        // Java Edition block hit: (volume + 1) / 8, pitch * 0.5 (grass: 1, 1).
+        sound.volume = config.masterVolume * .25;
+        sound.playbackRate = .5;
+        sound.preservesPitch = false;
+        sound.webkitPreservesPitch = false;
+    });
 
     let state = 'idle';
     let revealTimer = 0;
@@ -722,13 +743,22 @@
             block,
             pointerId: event.pointerId,
             startedAt: performance.now(),
+            nextHitAt: performance.now() + 200,
+            hitSources: blockSoundSources(worldDefinition.getBlock(block.dataset.type), 'hitSound'),
             hardness: Number(block.dataset.hardness) / worldDefinition.miningSpeed,
             stage: -1,
             frame: 0,
         };
         block.classList.add('is-mining');
         toolCursor.classList.add('is-mining');
+        playMiningHit();
         mining.frame = requestAnimationFrame(updateMining);
+    }
+
+    function playMiningHit() {
+        if (!mining || config.masterVolume === 0) return;
+        const path = randomItem(mining.hitSources);
+        if (path) playSound(miningSounds.get(assetUrl(path)));
     }
 
     function updateMining(now) {
@@ -745,6 +775,11 @@
             stopMining();
             return;
         }
+        if (now >= mining.nextHitAt) {
+            playMiningHit();
+            // Do not replay missed beats after a stalled frame.
+            mining.nextHitAt = now + 200;
+        }
         mining.frame = requestAnimationFrame(updateMining);
     }
 
@@ -752,6 +787,7 @@
         if (!mining) return;
         if (event?.pointerId !== undefined && event.pointerId !== mining.pointerId) return;
         cancelAnimationFrame(mining.frame);
+        miningSounds.forEach((sound) => { sound.pause(); sound.currentTime = 0; });
         mining.block.classList.remove('is-mining');
         mining.block.style.setProperty('--mining-progress', '0');
         mining.block.style.setProperty('--destroy-texture', 'none');
@@ -784,8 +820,9 @@
         });
         if (!block.dispatchEvent(beforeBreak)) return false;
 
-        const breakSound = definition.breakSound
-            ? blockSounds.get(assetUrl(definition.breakSound))
+        const soundPath = randomItem(blockSoundSources(definition));
+        const breakSound = soundPath
+            ? blockSounds.get(assetUrl(soundPath))
             : null;
         if (breakSound) playSound(breakSound);
         block.classList.add('is-air');

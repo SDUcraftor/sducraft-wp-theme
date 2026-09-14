@@ -26,6 +26,7 @@ function sducraft_mc_layer_defaults() {
         'grass' => array('count' => 1, 'min' => 1, 'max' => 3),
         'dirt' => array('count' => 3, 'min' => 0, 'max' => 20),
         'stone' => array('count' => 8, 'min' => 0, 'max' => 30),
+        'deepslate' => array('count' => 10, 'min' => 0, 'max' => 30),
         'bedrock' => array('count' => 1, 'min' => 1, 'max' => 3),
     );
 }

@@ -8,19 +8,75 @@
     "label": "草方块",
     "texture": "texture/block/grass_block_side.png",
     "hardness": 850,
-    "breakSound": "audio/Grass_dig4.ogg"
+    "hitSound": [
+      "audio/Grass_step1.ogg",
+      "audio/Grass_step2.ogg",
+      "audio/Grass_step3.ogg",
+      "audio/Grass_step4.ogg",
+      "audio/Grass_step5.ogg",
+      "audio/Grass_step6.ogg"
+    ],
+    "breakSound": [
+      "audio/Grass_dig1.ogg",
+      "audio/Grass_dig2.ogg",
+      "audio/Grass_dig3.ogg",
+      "audio/Grass_dig4.ogg"
+    ]
   },
   "dirt": {
     "label": "泥土",
     "texture": "texture/block/dirt.png",
     "hardness": 750,
-    "breakSound": "audio/Gravel_dig3.ogg"
+    "breakSound": [
+      "audio/Gravel_dig1.ogg",
+      "audio/Gravel_dig2.ogg",
+      "audio/Gravel_dig3.ogg",
+      "audio/Gravel_dig4.ogg"
+    ],
+    "hitSound": [
+      "audio/Gravel_step1.ogg",
+      "audio/Gravel_step2.ogg",
+      "audio/Gravel_step3.ogg",
+      "audio/Gravel_step4.ogg"
+    ]
   },
   "stone": {
     "label": "石头",
     "texture": "texture/block/stone.png",
     "hardness": 1450,
-    "breakSound": "audio/Stone_dig1.ogg"
+    "breakSound": [
+      "audio/Stone_dig1.ogg",
+      "audio/Stone_dig2.ogg",
+      "audio/Stone_dig3.ogg",
+      "audio/Stone_dig4.ogg"
+    ],
+    "hitSound": [
+      "audio/Stone_step1_pitch0.5.ogg.mp3",
+      "audio/Stone_step2_pitch0.5.ogg.mp3",
+      "audio/Stone_step3_pitch0.5.ogg.mp3",
+      "audio/Stone_step4_pitch0.5.ogg.mp3",
+      "audio/Stone_step5_pitch0.5.ogg.mp3",
+      "audio/Stone_step6_pitch0.5.ogg.mp3"
+    ]
+  },
+  "deepslate": {
+    "label": "深板岩",
+    "texture": "texture/block/deepslate.png",
+    "hardness": 2200,
+    "breakSound": [
+      "audio/Deepslate_break1.ogg.mp3",
+      "audio/Deepslate_break2.ogg.mp3",
+      "audio/Deepslate_break3.ogg.mp3",
+      "audio/Deepslate_break4.ogg.mp3"
+    ],
+    "hitSound": [
+      "audio/Deepslate_step1.ogg.mp3",
+      "audio/Deepslate_step2.ogg.mp3",
+      "audio/Deepslate_step3.ogg.mp3",
+      "audio/Deepslate_step4.ogg.mp3",
+      "audio/Deepslate_step5.ogg.mp3",
+      "audio/Deepslate_step6.ogg.mp3"
+    ]
   },
   "bedrock": {
     "label": "基岩",
@@ -32,18 +88,57 @@
     "label": "橡木",
     "texture": "texture/block/oak_log.png",
     "hardness": 1100,
-    "breakSound": "audio/Wood_dig4.ogg"
+    "breakSound": [
+      "audio/Wood_dig1.ogg",
+      "audio/Wood_dig2.ogg",
+      "audio/Wood_dig3.ogg",
+      "audio/Wood_dig4.ogg"
+    ],
+    "hitSound": [
+      "audio/Wood_step1.ogg.mp3",
+      "audio/Wood_step2.ogg.mp3",
+      "audio/Wood_step3.ogg.mp3",
+      "audio/Wood_step4.ogg.mp3",
+      "audio/Wood_step5.ogg.mp3",
+      "audio/Wood_step6.ogg.mp3"
+    ]
   },
   "leaves": {
     "label": "橡树树叶",
     "texture": "texture/block/oak_leave.png",
     "hardness": 500,
-    "breakSound": "audio/Grass_dig4.ogg"
+    "hitSound": [
+      "audio/Grass_step1.ogg",
+      "audio/Grass_step2.ogg",
+      "audio/Grass_step3.ogg",
+      "audio/Grass_step4.ogg",
+      "audio/Grass_step5.ogg",
+      "audio/Grass_step6.ogg"
+    ],
+    "breakSound": [
+      "audio/Grass_dig1.ogg",
+      "audio/Grass_dig2.ogg",
+      "audio/Grass_dig3.ogg",
+      "audio/Grass_dig4.ogg"
+    ]
   },
   "sapling": {
     "label": "树苗",
     "texture": "texture/block/oak_sapling.png",
     "hardness": 420,
-    "breakSound": "audio/Grass_dig4.ogg"
+    "hitSound": [
+      "audio/Grass_step1.ogg",
+      "audio/Grass_step2.ogg",
+      "audio/Grass_step3.ogg",
+      "audio/Grass_step4.ogg",
+      "audio/Grass_step5.ogg",
+      "audio/Grass_step6.ogg"
+    ],
+    "breakSound": [
+      "audio/Grass_dig1.ogg",
+      "audio/Grass_dig2.ogg",
+      "audio/Grass_dig3.ogg",
+      "audio/Grass_dig4.ogg"
+    ]
   }
 }

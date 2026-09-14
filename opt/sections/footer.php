@@ -17,7 +17,7 @@ $block_definitions = sducraft_mc_blocks();
 foreach (sducraft_mc_layer_defaults() as $type => $rule) {
     $world_fields[] = $number('world_layer_' . $type, ($block_definitions[$type]['label'] ?? $type) . '（层）', $rule['count'], $rule['min'], $rule['max']);
 }
-$world_fields[] = array('type' => 'submessage', 'style' => 'info', 'content' => '地层顺序固定为：空气、草地、泥土、石头、基岩。泥土和石头可设为 0；草地与基岩至少保留 1 层。修改后保存并刷新，彩蛋深度输入范围随之更新；超出世界范围的彩蛋会就近放置。');
+$world_fields[] = array('type' => 'submessage', 'style' => 'info', 'content' => '地层顺序固定为：空气、草地、泥土、石头、深板岩、基岩。泥土、石头和深板岩可设为 0；草地与基岩至少保留 1 层。修改后保存并刷新，彩蛋深度输入范围随之更新；超出世界范围的彩蛋会就近放置。');
 $world_fields[] = array('type' => 'subheading', 'content' => '地表装饰');
 $world_fields[] = $field('world_oak_tree', '橡树', 'switcher', true, array('desc' => '保持现有位置和形状；空气不足 6 层时不生成，避免树冠被截断。'));
 $world_fields[] = $field('world_sapling', '树苗', 'switcher', true, array('desc' => '保持现有位置；至少需要 1 层空气。'));
