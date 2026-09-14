@@ -51,12 +51,12 @@
       "audio/Stone_dig4.ogg"
     ],
     "hitSound": [
-      "audio/Stone_step1_pitch0.5.ogg.mp3",
-      "audio/Stone_step2_pitch0.5.ogg.mp3",
-      "audio/Stone_step3_pitch0.5.ogg.mp3",
-      "audio/Stone_step4_pitch0.5.ogg.mp3",
-      "audio/Stone_step5_pitch0.5.ogg.mp3",
-      "audio/Stone_step6_pitch0.5.ogg.mp3"
+      "audio/Stone_step1_pitch0.5.mp3",
+      "audio/Stone_step2_pitch0.5.mp3",
+      "audio/Stone_step3_pitch0.5.mp3",
+      "audio/Stone_step4_pitch0.5.mp3",
+      "audio/Stone_step5_pitch0.5.mp3",
+      "audio/Stone_step6_pitch0.5.mp3"
     ]
   },
   "deepslate": {
@@ -64,18 +64,18 @@
     "texture": "texture/block/deepslate.png",
     "hardness": 2200,
     "breakSound": [
-      "audio/Deepslate_break1.ogg.mp3",
-      "audio/Deepslate_break2.ogg.mp3",
-      "audio/Deepslate_break3.ogg.mp3",
-      "audio/Deepslate_break4.ogg.mp3"
+      "audio/Deepslate_break1.mp3",
+      "audio/Deepslate_break2.mp3",
+      "audio/Deepslate_break3.mp3",
+      "audio/Deepslate_break4.mp3"
     ],
     "hitSound": [
-      "audio/Deepslate_step1.ogg.mp3",
-      "audio/Deepslate_step2.ogg.mp3",
-      "audio/Deepslate_step3.ogg.mp3",
-      "audio/Deepslate_step4.ogg.mp3",
-      "audio/Deepslate_step5.ogg.mp3",
-      "audio/Deepslate_step6.ogg.mp3"
+      "audio/Deepslate_step1.mp3",
+      "audio/Deepslate_step2.mp3",
+      "audio/Deepslate_step3.mp3",
+      "audio/Deepslate_step4.mp3",
+      "audio/Deepslate_step5.mp3",
+      "audio/Deepslate_step6.mp3"
     ]
   },
   "bedrock": {
@@ -95,12 +95,12 @@
       "audio/Wood_dig4.ogg"
     ],
     "hitSound": [
-      "audio/Wood_step1.ogg.mp3",
-      "audio/Wood_step2.ogg.mp3",
-      "audio/Wood_step3.ogg.mp3",
-      "audio/Wood_step4.ogg.mp3",
-      "audio/Wood_step5.ogg.mp3",
-      "audio/Wood_step6.ogg.mp3"
+      "audio/Wood_step1.mp3",
+      "audio/Wood_step2.mp3",
+      "audio/Wood_step3.mp3",
+      "audio/Wood_step4.mp3",
+      "audio/Wood_step5.mp3",
+      "audio/Wood_step6.mp3"
     ]
   },
   "leaves": {

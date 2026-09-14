@@ -144,7 +144,7 @@
     });
 
     const assets = {
-        ignite: assetUrl('audio/Fire_ignite.ogg.mp3'),
+        ignite: assetUrl('audio/Fire_ignite.mp3'),
         fuse: assetUrl('audio/Fuse.ogg'),
         explosion: assetUrl('audio/Explosion1.ogg'),
         landing: assetUrl('audio/Grass_dig2.ogg'),
