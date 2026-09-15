@@ -37,6 +37,25 @@ require_once __DIR__ . '/inc/announcement-page.php';
 require_once __DIR__ . '/inc/modpack-post-type.php';
 require_once __DIR__ . '/inc/category-posts.php';
 require_once __DIR__ . '/inc/timeline.php';
+
+/**
+ * @author Billadom
+ * 添加自定义图标
+ */
+function sducraft_add_custom_icons() {
+    wp_enqueue_style(
+        'sducraft_dashicons',
+        get_stylesheet_directory_uri() . '/inc/modules/dashicons/css/icn-jennystudio.css',
+        [],
+        null
+    );
+}
+
+add_action('wp_enqueue_scripts', 'sducraft_add_custom_icons');
+add_action('admin_enqueue_scripts', 'sducraft_add_custom_icons');
+add_action('login_enqueue_scripts', 'sducraft_add_custom_icons');
+
+
 /**
  * @author Billadom
  * 给 wp:query 的 query 参数中添加了一些参数

@@ -7,7 +7,7 @@ add_action('after_setup_theme', function () {
     $prefix = 'sducraft_options';
     Sakurairo_CSF::createOptions($prefix, array(
         'menu_title' => 'SDUCraft 设置', 'menu_slug' => 'sducraft_options',
-        'framework_title' => 'SDUCraft 设置', 'menu_icon' => 'dashicons-admin-generic',
+        'framework_title' => 'SDUCraft 设置', 'menu_icon' => 'dashicons-creeper',
         'show_bar_menu' => false, 'show_sub_menu' => true, 'show_in_network' => false,
         'framework_class' => 'sducraft-settings',
         'footer_text' => 'SDUCraft 子主题设置',
